@@ -48,14 +48,20 @@ This makes LexiEase a natural fit for **ElevenLabs’ mission** of making inform
 
 ## What Problems Does LexiEase AI Solve?
 
-1. **Limited Access to Dyslexia Screening**  
-   Many individuals with dyslexia struggle to get timely and affordable screenings, leading to delayed interventions and missed educational opportunities.
+**1. Limited Access to Dyslexia Screening**:
 
-2. **Lack of Personalized Learning Paths**  
-   Traditional learning resources are not tailored to the unique needs of dyslexic learners, making it harder for them to achieve their full potential in conventional educational settings.
+Early diagnosis is expensive and inaccessible for many learners.
+> **Voice-guided AI screening tests** lower barriers and reduce anxiety.
 
-3. **Insufficient Support Tools for Dyslexic Learners**  
-   Dyslexic individuals often lack access to specialized tools, like writing assistants and document simplifiers, that can make reading and learning more accessible and enjoyable.
+**2. Text-Heavy Learning Platforms**: 
+
+Traditional platforms overload dyslexic learners with dense text.
+> **Everything in LexiEase can be listened to**, reducing cognitive fatigue.
+
+**3. Low Reading Confidence & Retention**:
+
+Silent reading increases stress and slows comprehension.
+> **Narrated content and spoken feedback** build confidence and fluency.
 
 ---
 
