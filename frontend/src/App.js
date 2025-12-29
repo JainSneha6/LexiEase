@@ -34,15 +34,15 @@ function App() {
           <Route path="/document-simplifier" element={<DocumentSimplifier />} />
           <Route path='/mindmap-generator' element={<MindMapGenerator />} />
           <Route path='/document-support' element={<DocumentSupport />} />
-          <Route path='/customized-learning-path' element={<CustomizedLearningPathsPage/>} />
-          <Route path='/mild-learning-path' element={<MildLearningPathPage/>} />
-          <Route path='/moderate-learning-path' element={<ModerateLearningPathPage/>} />
-          <Route path='/severe-learning-path' element={<SevereLearningPathPage/>} />
-          <Route path='/phonological-assistant' element={<PhonologicalAwarenessAssistant/>} />
-          <Route path='/reading-comprehension' element={<ReadingComprehension/>} />
-          <Route path='phonological-awareness-test' element={<Test1/>} />
-          <Route path='/memory-game' element={<MemoryGame/>} />
-          <Route path='/chatbot' element={<Chatbot/>} />
+          <Route path='/customized-learning-path' element={<CustomizedLearningPathsPage />} />
+          <Route path='/mild-learning-path' element={<MildLearningPathPage />} />
+          <Route path='/moderate-learning-path' element={<ModerateLearningPathPage />} />
+          <Route path='/severe-learning-path' element={<SevereLearningPathPage />} />
+          <Route path='/phonological-assistant' element={<PhonologicalAwarenessAssistant />} />
+          <Route path='/reading-comprehension' element={<ReadingComprehension />} />
+          <Route path='phonological-awareness-test' element={<Test1 />} />
+          <Route path='/memory-game' element={<MemoryGame />} />
+          <Route path='/chatbot' element={<Chatbot />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/login" element={<Login />} />
         </Routes>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FaApple, FaDog, FaCar, FaRocket, FaCat, FaFish, FaPlay } from 'react-icons/fa';
+import ChatWidget from '../components/ChatWidget';
 
 const MemoryTest = () => {
   const [sequence, setSequence] = useState([]);
@@ -201,6 +202,7 @@ const MemoryTest = () => {
           </div>
         )}
       </div>
+      <ChatWidget pageContext="kauffman-battery-assessment-test" />
     </div>
   );
 };

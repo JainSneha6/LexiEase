@@ -4,13 +4,14 @@ import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist/build/pdf';
 import { jsPDF } from 'jspdf';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import ChatWidget from '../components/ChatWidget';
 
 GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${'2.13.216'}/pdf.worker.min.js`;
 
 const DocumentSimplifier = () => {
     const [selectedFile, setSelectedFile] = useState(null);
     const [simplifiedText, setSimplifiedText] = useState('');
-    const [importantWords, setImportantWords] = useState([]); 
+    const [importantWords, setImportantWords] = useState([]);
     const [loadingText, setLoadingText] = useState(false);
     const [message, setMessage] = useState('');
 
@@ -61,7 +62,7 @@ const DocumentSimplifier = () => {
                 },
             });
             setSimplifiedText(response.data.simplified_text);
-            setImportantWords(response.data.important_words); 
+            setImportantWords(response.data.important_words);
             setMessage('PDF uploaded and simplified successfully!');
         } catch (error) {
             console.error('Error uploading the PDF:', error.response ? error.response.data : error.message);
@@ -75,33 +76,33 @@ const DocumentSimplifier = () => {
             setMessage('No simplified text to download.');
             return;
         }
-    
+
         const doc = new jsPDF();
-    
+
         doc.setFontSize(12);
-        
-        const lines = doc.splitTextToSize(simplifiedText, 190); 
-    
-        let yPosition = 10; 
-        const lineHeight = 10; 
-    
+
+        const lines = doc.splitTextToSize(simplifiedText, 190);
+
+        let yPosition = 10;
+        const lineHeight = 10;
+
         lines.forEach((line) => {
-            if (yPosition + lineHeight > doc.internal.pageSize.height - 10) { 
-                doc.addPage(); 
-                yPosition = 10; 
+            if (yPosition + lineHeight > doc.internal.pageSize.height - 10) {
+                doc.addPage();
+                yPosition = 10;
             }
             doc.text(line, 10, yPosition);
-            yPosition += lineHeight; 
+            yPosition += lineHeight;
         });
-    
-        doc.save('simplified_text.pdf'); 
+
+        doc.save('simplified_text.pdf');
     };
 
     const highlightImportantWords = (text, importantWords) => {
         let highlightedText = text;
         importantWords.forEach(word => {
             const regex = new RegExp(`(${word})`, 'gi');
-            highlightedText = highlightedText.replace(regex, '<mark>$1</mark>'); 
+            highlightedText = highlightedText.replace(regex, '<mark>$1</mark>');
         });
         return highlightedText;
     };
@@ -112,12 +113,12 @@ const DocumentSimplifier = () => {
             <h1 className="text-4xl font-bold mb-8 text-blue-800 text-center">AI-Powered Document Simplifier</h1>
 
             <div className="mb-4 w-full max-w-md">
-                <input 
-                    type="file" 
-                    name='file' 
-                    accept=".pdf" 
-                    onChange={handleFileChange} 
-                    className="block w-full border border-gray-300 rounded-md p-2 mb-4" 
+                <input
+                    type="file"
+                    name='file'
+                    accept=".pdf"
+                    onChange={handleFileChange}
+                    className="block w-full border border-gray-300 rounded-md p-2 mb-4"
                 />
             </div>
 
@@ -125,7 +126,7 @@ const DocumentSimplifier = () => {
                 className="bg-gradient-to-r from-blue-400 to-blue-600 text-white py-2 px-4 rounded-lg shadow-lg hover:shadow-xl transition duration-300 ease-in-out"
                 onClick={handleUpload}
             >
-                {loadingText?'Uploading and Simplifying  PDF...':'Upload and Simplify PDF'}
+                {loadingText ? 'Uploading and Simplifying  PDF...' : 'Upload and Simplify PDF'}
             </button>
 
             {message && <p className="mt-4 text-red-600">{message}</p>}
@@ -134,7 +135,7 @@ const DocumentSimplifier = () => {
                 <div className="mt-4 bg-white shadow-lg rounded-lg p-6 w-full max-w-4xl">
                     <h2 className="text-xl font-bold">Simplified Text:</h2>
                     <p className="mt-2 whitespace-pre-wrap text-gray-700" dangerouslySetInnerHTML={{ __html: highlightImportantWords(simplifiedText, importantWords) }} />
-                    
+
                     <button
                         className="bg-green-500 text-white py-2 px-4 rounded-lg mt-4 hover:bg-green-600 transition duration-300 ease-in-out"
                         onClick={handleDownloadPDF}
@@ -143,6 +144,7 @@ const DocumentSimplifier = () => {
                     </button>
                 </div>
             )}
+            <ChatWidget pageContext="document-simplifier" />
         </div>
     );
 };

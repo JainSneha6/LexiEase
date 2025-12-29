@@ -3,6 +3,7 @@ import { FaAppleAlt, FaBicycle, FaBus, FaCar, FaCarrot, FaPepperHot, FaShip, FaT
 import { GiCherry, GiGrapes, GiWatermelon, GiStrawberry, GiPineapple, GiLion, GiTiger, GiElephant, GiAirplane } from 'react-icons/gi';
 import { GiPotato, GiTomato, GiPeas, GiBellPepper } from 'react-icons/gi';
 import { FaCat, FaDog, FaHorse } from 'react-icons/fa';
+import ChatWidget from '../components/ChatWidget';
 
 // Define stages with icons and appropriate colors
 const stages = {
@@ -164,6 +165,7 @@ const MemoryGame = () => {
           </button>
         </div>
       )}
+      <ChatWidget pageContext="memory-game" />
     </section>
   );
 };

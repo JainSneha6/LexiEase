@@ -2,6 +2,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import axios from "axios";
 import { FaMicrophone, FaPaperPlane, FaFileImage, FaStop, FaSpinner, FaPlay, FaPause } from "react-icons/fa";
+import ChatWidget from "../components/ChatWidget";
 
 const API_BASE = "http://localhost:5000";
 
@@ -443,6 +444,7 @@ const Chatbot = () => {
           )}
         </div>
       </div>
+      <ChatWidget pageContext="chatbot" />
     </div>
   );
 };

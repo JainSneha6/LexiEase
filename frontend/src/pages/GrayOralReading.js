@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ToastContainer, toast } from 'react-toastify';
 import axios from 'axios';
 import 'react-toastify/dist/ReactToastify.css';
+import ChatWidget from '../components/ChatWidget';
 
 const GrayOralReadingTest = () => {
   const [isReading, setIsReading] = useState(false);
@@ -11,7 +12,7 @@ const GrayOralReadingTest = () => {
   const [readingTime, setReadingTime] = useState(0);
   const [isTestCompleted, setIsTestCompleted] = useState(false);
   const [readingSpeed, setReadingSpeed] = useState(0);
-  const [fluencyRating, setFluencyRating] = useState(null); 
+  const [fluencyRating, setFluencyRating] = useState(null);
   const [startTime, setStartTime] = useState(null);
 
   const passage =
@@ -69,7 +70,7 @@ const GrayOralReadingTest = () => {
   };
 
   const saveResultsToBackend = async (speed, timeTaken) => {
-    
+
 
     try {
       await axios.post(
@@ -98,7 +99,7 @@ const GrayOralReadingTest = () => {
         },
       });
 
-      setFluencyRating(response.data.fluency_rating); 
+      setFluencyRating(response.data.fluency_rating);
       toast.success('Audio uploaded successfully!');
     } catch (error) {
       console.error('Error uploading audio:', error.response ? error.response.data : error.message);
@@ -111,7 +112,7 @@ const GrayOralReadingTest = () => {
       saveResultsToBackend(readingSpeed, readingTime);
       uploadAudioToBackend();
     }
-  }, [isTestCompleted, audioBlob]); 
+  }, [isTestCompleted, audioBlob]);
 
   return (
     <div className="bg-gradient-to-r from-green-200 via-blue-200 to-purple-200 min-h-screen p-8 flex flex-col items-center" style={{ fontFamily: 'OpenDyslexic', lineHeight: '1.5' }}>
@@ -155,6 +156,7 @@ const GrayOralReadingTest = () => {
           </div>
         )}
       </div>
+      <ChatWidget pageContext="gray-oral-reading-test" />
     </div>
   );
 };

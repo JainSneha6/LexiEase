@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import puzzles from '../utils/puzzles';
 import AudioPlayer from '../components/AudioPlayer';
+import ChatWidget from '../components/ChatWidget';
 
 const playSound = (isCorrect) => {
   const audio = new Audio(isCorrect ? '/sounds/correct.mp3' : '/sounds/click.mp3');
@@ -129,6 +130,7 @@ const PuzzleGame = () => {
           </div>
         </div>
       )}
+      <ChatWidget pageContext="phonological-assistant" />
     </section>
   );
 };

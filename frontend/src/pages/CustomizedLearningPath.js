@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FaCheckCircle, FaBook, FaLightbulb, FaUserFriends } from 'react-icons/fa'; // Icons for the cards
+import ChatWidget from '../components/ChatWidget';
 
 const learningPaths = [
   {
@@ -69,6 +70,7 @@ const CustomizedLearningPathsPage = () => {
           </div>
         ))}
       </div>
+      <ChatWidget pageContext="customized-learning-path" />
     </section>
   );
 };

@@ -3,6 +3,7 @@ import SignatureCanvas from 'react-signature-canvas';
 import { FaVolumeUp } from 'react-icons/fa';
 import { Pie } from 'react-chartjs-2';
 import 'chart.js/auto';
+import ChatWidget from '../components/ChatWidget';
 
 const nonsenseWords = {
   easy: ['zap', 'zaf'],
@@ -133,42 +134,42 @@ const Test1 = () => {
     },
   };
 
-//   const renderDetailedResults = () => {
-//     const filteredResults = Object.entries(results).filter(
-//       ([, result]) => (selectedSegment === 0 && result === 'Correct') || (selectedSegment === 1 && result === 'Incorrect')
-//     );
+  //   const renderDetailedResults = () => {
+  //     const filteredResults = Object.entries(results).filter(
+  //       ([, result]) => (selectedSegment === 0 && result === 'Correct') || (selectedSegment === 1 && result === 'Incorrect')
+  //     );
 
-//     return (
-//       <div className="mt-5 p-5 bg-white rounded-lg shadow-md">
-//         <h3 className="text-2xl font-semibold text-gray-800 mb-4">
-//           {selectedSegment === 0 ? 'Correct Words' : 'Incorrect Words'}
-//         </h3>
-//         <ul className="space-y-4">
-//           {filteredResults.map(([word, result]) => (
-//             <li
-//               key={word}
-//               className={`text-lg font-medium ${
-//                 result === 'Correct' ? 'text-green-600' : 'text-red-600'
-//               } flex justify-between items-center`}
-//             >
-//               <span>{word}</span>
-//               <span
-//                 className={`inline-block py-1 px-3 rounded-full text-sm font-semibold ${
-//                   result === 'Correct' ? 'bg-green-100' : 'bg-red-100'
-//                 }`}
-//               >
-//                 {result}
-//               </span>
-//             </li>
-//           ))}
-//         </ul>
-//       </div>
-//     );
-//   };
+  //     return (
+  //       <div className="mt-5 p-5 bg-white rounded-lg shadow-md">
+  //         <h3 className="text-2xl font-semibold text-gray-800 mb-4">
+  //           {selectedSegment === 0 ? 'Correct Words' : 'Incorrect Words'}
+  //         </h3>
+  //         <ul className="space-y-4">
+  //           {filteredResults.map(([word, result]) => (
+  //             <li
+  //               key={word}
+  //               className={`text-lg font-medium ${
+  //                 result === 'Correct' ? 'text-green-600' : 'text-red-600'
+  //               } flex justify-between items-center`}
+  //             >
+  //               <span>{word}</span>
+  //               <span
+  //                 className={`inline-block py-1 px-3 rounded-full text-sm font-semibold ${
+  //                   result === 'Correct' ? 'bg-green-100' : 'bg-red-100'
+  //                 }`}
+  //               >
+  //                 {result}
+  //               </span>
+  //             </li>
+  //           ))}
+  //         </ul>
+  //       </div>
+  //     );
+  //   };
 
   return (
     <div className="flex flex-col items-center justify-center h-screen bg-gradient-to-r from-green-200 via-blue-200 to-purple-200" style={{ fontFamily: 'OpenDyslexic', lineHeight: '1.5' }}>
-    <h2 className="text-2xl font-semibold text-blue-700 mb-4">Phonological Awareness Test</h2>
+      <h2 className="text-2xl font-semibold text-blue-700 mb-4">Phonological Awareness Test</h2>
       <div className="relative w-full max-w-3xl p-10 bg-white rounded-lg shadow-2xl">
         {isFinished ? (
           <div className="mt-10 p-5 bg-gradient-to-br from-green-100 to-green-200 border border-green-300 rounded-lg shadow-lg">
@@ -178,7 +179,7 @@ const Test1 = () => {
             </p>
 
             <div style={{ width: '400px', height: '400px', margin: '0 auto' }}>
-                < Pie data={chartData} options={chartOptions} />
+              < Pie data={chartData} options={chartOptions} />
             </div>
 
             {/* {selectedSegment !== null && renderDetailedResults()} */}
@@ -226,6 +227,7 @@ const Test1 = () => {
           </>
         )}
       </div>
+      <ChatWidget pageContext="phonological-awareness-test" />
     </div>
   );
 };

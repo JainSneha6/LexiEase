@@ -2,6 +2,7 @@ import React from 'react';
 import Header from '../components/Header';
 import ServicesSection from '../components/ServiceSection';
 import Footer from '../components/Footer';
+import ChatWidget from '../components/ChatWidget';
 
 const HomePage = () => {
   return (
@@ -10,6 +11,7 @@ const HomePage = () => {
       <main className="flex-1 w-full max-w-4xl mt-6 text-center">
         <ServicesSection />
       </main>
+      <ChatWidget pageContext="home" />
       <Footer />
     </div>
   );

@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import passages from '../utils/ReadingComprehension';
 import AudioPlayer from '../components/AudioPlayer';
+import ChatWidget from '../components/ChatWidget';
 
 const playSound = (isCorrect) => {
   const audio = new Audio(isCorrect ? '/sounds/correct.mp3' : '/sounds/incorrect.mp3');
@@ -85,12 +86,11 @@ const ReadingComprehension = () => {
                     <label
                       key={option}
                       className={`block p-2 border rounded cursor-pointer transition-colors 
-                        ${
-                          selectedAnswers[index] === option
-                            ? option === question.correctAnswer
-                              ? 'bg-green-200'
-                              : 'bg-red-200'
-                            : 'bg-gray-100'
+                        ${selectedAnswers[index] === option
+                          ? option === question.correctAnswer
+                            ? 'bg-green-200'
+                            : 'bg-red-200'
+                          : 'bg-gray-100'
                         }
                       `}
                       onClick={() => handleOptionSelect(index, option)}
@@ -115,6 +115,7 @@ const ReadingComprehension = () => {
           </div>
         </div>
       )}
+      <ChatWidget pageContext="reading-comprehension" />
     </section>
   );
 };

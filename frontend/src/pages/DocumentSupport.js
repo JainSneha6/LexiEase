@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FaFileAlt, FaProjectDiagram } from 'react-icons/fa'; // Icons for the cards
+import ChatWidget from '../components/ChatWidget';
 
 const services = [
     {
@@ -45,6 +46,7 @@ const DocumentSupport = () => {
                     </div>
                 ))}
             </div>
+            <ChatWidget pageContext="document-support" />
         </section>
     );
 };

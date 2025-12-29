@@ -1,35 +1,27 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ToastContainer, toast } from 'react-toastify';
 import axios from 'axios';
 import 'react-toastify/dist/ReactToastify.css';
 import paragraphs from '../utils/ReadingParagraphs';
 import AudioPlayer from '../components/AudioPlayer';
+import ChatWidget from '../components/ChatWidget';
 
 const ReadingAssistanceTool = () => {
   const [isReading, setIsReading] = useState(false);
-  const [isRecording, setIsRecording] = useState(false);
   const [mediaRecorder, setMediaRecorder] = useState(null);
   const [audioBlob, setAudioBlob] = useState(null);
   const [readingTime, setReadingTime] = useState(0);
   const [isTestCompleted, setIsTestCompleted] = useState(false);
   const [readingSpeed, setReadingSpeed] = useState(0);
   const [fluencyRating, setFluencyRating] = useState(null);
-  const [isFluencyRatingReceived, setIsFluencyRatingReceived] = useState(false);
   const [startTime, setStartTime] = useState(null);
   const [currentParagraph, setCurrentParagraph] = useState(null);
-  const [isVisible, setIsVisible] = useState(false);
-  const [speechSpeed, setSpeechSpeed] = useState(1); // Default speech speed
-  const [voices, setVoices] = useState([]); // Available voices
-  const [selectedVoice, setSelectedVoice] = useState(null); // Selected voice
   const [currentSentenceIndex, setCurrentSentenceIndex] = useState(null);
-  const [currentWordIndex, setCurrentWordIndex] = useState(-1);
-  const [wordDefinitions, setWordDefinitions] = useState({
-    word: '',
-    definition: '',
-    synonyms: [],
-  });
+  const [wordDefinitions, setWordDefinitions] = useState(null);
 
-  const dyslexiaFriendlyFont = {
+  const audioRef = useRef(null);
+
+  const dyslexiaStyle = {
     fontFamily: 'OpenDyslexic, sans-serif',
     lineHeight: '2',
     letterSpacing: '0.1em',
@@ -40,23 +32,29 @@ const ReadingAssistanceTool = () => {
     fontSize: '1.2rem',
   };
 
-  useEffect(() => {
-    setIsVisible(true);
-    const synth = window.speechSynthesis;
-    const availableVoices = synth.getVoices();
+  /* ---------------- ELEVENLABS TTS ---------------- */
+  const speakText = async (text) => {
+    try {
+      const res = await fetch("http://localhost:5000/api/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
 
-    // Set available voices and select the first one
-    setVoices(availableVoices);
-    setSelectedVoice(availableVoices[0]); // Default voice to the first available voice
+      const data = await res.json();
 
-    // Voice change listener
-    synth.onvoiceschanged = () => {
-      const updatedVoices = synth.getVoices();
-      setVoices(updatedVoices);
-      setSelectedVoice(updatedVoices[0]); // Default to the first available voice
-    };
-  }, []);
+      if (data?.audio_filename) {
+        audioRef.current.src = `http://localhost:5000/api/audio/${encodeURIComponent(
+          data.audio_filename
+        )}`;
+        audioRef.current.play().catch(() => { });
+      }
+    } catch (err) {
+      console.error("TTS error:", err);
+    }
+  };
 
+  /* ---------------- Reading Recording Logic ---------------- */
   const handleStartReading = async () => {
     setIsReading(true);
     setStartTime(Date.now());
@@ -67,212 +65,141 @@ const ReadingAssistanceTool = () => {
       setMediaRecorder(recorder);
 
       let chunks = [];
-      recorder.ondataavailable = (event) => {
-        chunks.push(event.data);
-      };
+      recorder.ondataavailable = (e) => chunks.push(e.data);
 
       recorder.onstop = () => {
         const blob = new Blob(chunks, { type: 'audio/wav' });
         setAudioBlob(blob);
-        setIsRecording(false);
-      };
-
-      recorder.onerror = (event) => {
-        console.error('MediaRecorder error:', event.error);
-        toast.error('MediaRecorder error occurred.');
       };
 
       recorder.start();
-      setIsRecording(true);
-    } catch (error) {
-      console.error('Error accessing microphone:', error);
-      toast.error('Error accessing microphone. Please check your permissions.');
+    } catch (err) {
+      toast.error("Microphone access denied.");
       setIsReading(false);
     }
   };
 
   const handleFinishReading = () => {
     setIsReading(false);
+
     const timeTaken = (Date.now() - startTime) / 1000;
     setReadingTime(timeTaken);
     setIsTestCompleted(true);
 
-    const wordsInPassage = paragraphs[currentParagraph].text.split(' ').length;
-    const speed = (wordsInPassage / (timeTaken / 60)).toFixed(2);
-    setReadingSpeed(speed);
+    const words = paragraphs[currentParagraph].text.split(" ").length;
+    setReadingSpeed((words / (timeTaken / 60)).toFixed(2));
 
-    if (mediaRecorder) {
-      mediaRecorder.stop();
-    } else {
-      toast.error('Recording not started correctly.');
-    }
+    if (mediaRecorder) mediaRecorder.stop();
   };
 
-  const saveResultsToBackend = async (speed, timeTaken) => {
-    try {
-      await axios.post(
-        'http://localhost:5000/api/save-reading-results',
-        { readingSpeed: speed, timeTaken },
-      );
-      toast.success('Results saved successfully!');
-    } catch (error) {
-      console.error('Error saving results:', error.response ? error.response.data : error.message);
-      toast.error('Error saving results!');
-    }
-  };
-
-  const uploadAudioToBackend = async () => {
-    const formData = new FormData();
-    formData.append('audio', audioBlob, 'reading-test.wav');
-
-    try {
-      const response = await axios.post('http://localhost:5000/api/upload-audio', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-
-      setFluencyRating(response.data.fluency_rating);
-      setIsFluencyRatingReceived(true);
-      toast.success('Audio uploaded and fluency rating received!');
-    } catch (error) {
-      console.error('Error uploading audio:', error.response ? error.response.data : error.message);
-      toast.error('Error uploading audio!');
-    }
-  };
-
+  /* ---------------- Upload reading audio ---------------- */
   useEffect(() => {
-    if (isTestCompleted && audioBlob) {
-      saveResultsToBackend(readingSpeed, readingTime);
-      uploadAudioToBackend();
-    }
-  }, [isTestCompleted, audioBlob]);
+    if (!audioBlob || !isTestCompleted) return;
 
-  useEffect(() => {
-    if (isFluencyRatingReceived) {
-      setIsFluencyRatingReceived(false);
-    }
-  }, [isFluencyRatingReceived]);
+    const upload = async () => {
+      const formData = new FormData();
+      formData.append("audio", audioBlob, "reading.wav");
 
-  const handleParagraphSelect = (index) => {
-    setCurrentParagraph(index);
-    setIsTestCompleted(false);
-    setFluencyRating(null);
-    setAudioBlob(null);
-    setReadingTime(0);
-    setReadingSpeed(0);
-  };
-
-  const handleReadSentence = (text, index) => {
-    const words = text.split(' ');
-    const synth = window.speechSynthesis;
-    let wordIndex = 0;
-  
-    // Set the current sentence index
-    setCurrentSentenceIndex(index);
-  
-    const readNextWord = () => {
-      if (wordIndex < words.length) {
-        const utterance = new SpeechSynthesisUtterance(words[wordIndex]);
-        utterance.rate = speechSpeed;
-        utterance.voice = selectedVoice;
-  
-        // Increment the index after the word is spoken
-        utterance.onend = () => {
-          wordIndex++;
-          readNextWord(); // Read the next word after the current one ends
-        };
-  
-        // Read the word
-        synth.speak(utterance);
-      } else {
-        // Reset current sentence index when done reading
-        setCurrentSentenceIndex(null);
+      try {
+        const res = await axios.post("http://localhost:5000/api/upload-audio", formData);
+        setFluencyRating(res.data.fluency_rating);
+        toast.success("Fluency evaluated successfully!");
+      } catch (err) {
+        toast.error("Failed to analyze fluency.");
       }
     };
-  
-    readNextWord();
+
+    upload();
+  }, [audioBlob, isTestCompleted]);
+
+  /* ---------------- Sentence reader using ElevenLabs ---------------- */
+  const handleReadSentence = async (sentence, index) => {
+    setCurrentSentenceIndex(index);
+    await speakText(sentence);
+    setCurrentSentenceIndex(null);
   };
 
+  /* ---------------- Word definition ---------------- */
   const handleWordClick = async (word) => {
-    const audio = new Audio('/sounds/click.mp3');
-    audio.play();
     try {
-      const response = await axios.get(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`);
-      const data = response.data[0];
+      const res = await axios.get(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`);
+      const data = res.data[0];
       setWordDefinitions({
         word,
         definition: data.meanings[0].definitions[0].definition,
         synonyms: data.meanings[0].synonyms || [],
       });
-    } catch (error) {
-      console.error('Error fetching word meaning:', error);
-      toast.error('Error fetching word meaning!');
+    } catch {
+      toast.error("Could not fetch word meaning.");
     }
   };
 
   return (
-    <div className="bg-gradient-to-r from-green-200 via-blue-200 to-purple-200 min-h-screen p-8 flex flex-col items-center" style={{ fontFamily: 'OpenDyslexic', lineHeight: '1.5' }}>
+    <div
+      className="bg-gradient-to-r from-green-200 via-blue-200 to-purple-200 min-h-screen p-8 flex flex-col items-center"
+      style={{ fontFamily: 'OpenDyslexic' }}
+    >
       <ToastContainer />
-      <h2 className="text-4xl font-bold text-blue-800 mb-8 text-center">Reading Assistance Tool</h2>
-      
+
+      <h2 className="text-4xl font-bold text-blue-800 mb-8">
+        Reading Assistance Tool
+      </h2>
 
       {currentParagraph === null ? (
         <section className="grid grid-cols-1 gap-6 w-full max-w-4xl">
-          <h3 className="text-xl font-bold mb-4 text-center">Select a paragraph to read:</h3>
+          <h3 className="text-xl font-bold text-center">Select a paragraph:</h3>
 
-          {paragraphs.map((paragraph, index) => (
+          {paragraphs.map((p, i) => (
             <div
-              key={index}
-              className={`bg-white p-6 rounded-lg shadow-md cursor-pointer transition-transform transform hover:scale-105
-                w-full ${isVisible ? `animate-crazyCardAnimation delay-${index * 200}` : 'opacity-0'}`}
-              onClick={() => handleParagraphSelect(index)}
+              key={i}
+              className="bg-white p-6 rounded-lg shadow cursor-pointer hover:scale-105 transition"
+              onClick={() => setCurrentParagraph(i)}
             >
-              <h3 className="text-xl font-bold text-blue-700 mb-2">
-                {`Paragraph ${index + 1}`}
-              </h3>
-              <p className="text-gray-600">{paragraph.text.substring(0, 100)}...</p>
+              <h3 className="text-blue-700 font-bold">Paragraph {i + 1}</h3>
+              <p className="text-gray-600">{p.text.slice(0, 120)}...</p>
             </div>
           ))}
         </section>
       ) : (
-        <div className={`bg-white shadow-lg rounded-lg p-8 max-w-4xl w-full mx-auto text-center 
-          ${isVisible ? 'opacity-100 animate-fadeIn' : 'opacity-0'}`}>
+        <div className="bg-white shadow-lg rounded-lg p-8 max-w-4xl w-full">
+
           <h3 className="text-xl font-bold mb-4">Read the following passage:</h3>
-          
-          {currentParagraph !== null && (
-            <div className="mt-4 flex flex-col items-center">
-              <img src={paragraphs[currentParagraph].image} 
-                alt="GIF related to the passage" 
-                className="my-2 " 
-                style={{ width: '600px', height: '300px' }} />
-              <AudioPlayer audio={paragraphs[currentParagraph].voice}/>
-            </div>
-          )}
 
+          {currentParagraph !== null && (<div className="mt-4 flex flex-col items-center"> <img src={paragraphs[currentParagraph].image} alt="GIF related to the passage" className="my-2 " style={{ width: '600px', height: '300px' }} /> <AudioPlayer audio={paragraphs[currentParagraph].voice} /> </div>)}
+          <div className="my-4 flex justify-center">
+            <AudioPlayer audio={paragraphs[currentParagraph].voice} />
+          </div>
 
-          <div className="text-gray-700 mb-4" style={dyslexiaFriendlyFont}>
-            {paragraphs[currentParagraph].text.split('. ').map((sentence, index) => (
-              <div 
-                key={index} 
-                className="flex justify-between items-center mb-2 flex-wrap">
-                <span
-                  className={`inline-block cursor-pointer ${currentSentenceIndex === index ? 'bg-yellow-200' : ''}`}
+          <div style={dyslexiaStyle}>
+            {paragraphs[currentParagraph].text.split(". ").map((sentence, i) => (
+              <div key={i} className="flex items-center gap-3 mb-3 flex-wrap">
+                <div
+                  className={`flex flex-wrap leading-relaxed ${currentSentenceIndex === i ? "bg-yellow-200" : ""
+                    }`}
+                  style={{
+                    wordBreak: "break-word",
+                    overflowWrap: "anywhere",
+                  }}
                 >
-                  {sentence.split(' ').map((word, wordIndex) => (
+                  {sentence.split(" ").map((word, idx) => (
                     <span
-                      key={wordIndex}
+                      key={idx}
                       onClick={() => handleWordClick(word)}
-                      className="inline-block cursor-pointer hover:bg-gray-200"
-                      style={{ marginRight: '6px' }}
+                      className="cursor-pointer hover:bg-gray-200 mr-1"
+                      style={{
+                        display: "inline",
+                        whiteSpace: "normal",
+                      }}
                     >
                       {word}
                     </span>
                   ))}
-                </span>
+                </div>
+
+
                 <button
-                  onClick={() => handleReadSentence(sentence.trim(), index)}
-                  className="text-blue-500 underline hover:text-blue-700 ml-4"
+                  onClick={() => handleReadSentence(sentence, i)}
+                  className="text-blue-600 underline hover:text-blue-800"
                 >
                   Listen
                 </button>
@@ -280,88 +207,53 @@ const ReadingAssistanceTool = () => {
             ))}
           </div>
 
-
-          <div className="mb-4">
-            <label htmlFor="speechSpeed" className="mr-2">Speech Speed:</label>
-            <input
-              type="range"
-              id="speechSpeed"
-              min="0.5"
-              max="2"
-              step="0.1"
-              value={speechSpeed}
-              onChange={(e) => setSpeechSpeed(e.target.value)}
-              className="w-full"
-            />
-            <p>Current Speed: {speechSpeed}x</p>
-          </div>
-
-          <div className="mb-4">
-            <label htmlFor="voiceSelect" className="mr-2">Select Voice:</label>
-            <select
-              id="voiceSelect"
-              value={selectedVoice ? selectedVoice.name : ''}
-              onChange={(e) => {
-                const voice = voices.find(v => v.name === e.target.value);
-                setSelectedVoice(voice);
-              }}
-            >
-              {voices.map((voice, index) => (
-                <option key={index} value={voice.name}>{voice.name} ({voice.lang})</option>
-              ))}
-            </select>
-          </div>
-
           {!isReading ? (
             <button
               onClick={handleStartReading}
-              className="bg-gradient-to-r from-green-400 to-green-600 text-white px-6 py-3 rounded-full shadow-lg hover:shadow-xl transition duration-300 ease-in-out transform hover:scale-105"
+              className="mt-6 bg-green-500 text-white px-6 py-3 rounded-full shadow hover:scale-105 transition"
             >
               Start Reading
             </button>
           ) : (
             <button
               onClick={handleFinishReading}
-              className="bg-gradient-to-r from-red-400 to-red-600 text-white px-6 py-3 rounded-full shadow-lg hover:shadow-xl transition duration-300 ease-in-out transform hover:scale-105"
+              className="mt-6 bg-red-500 text-white px-6 py-3 rounded-full shadow hover:scale-105 transition"
             >
               Finish Reading
             </button>
           )}
 
-          {wordDefinitions.word && (
-            <div className="bg-blue-100 p-4 rounded-lg mt-4">
-              <h4 className="text-blue-800 font-semibold">
-                Meaning of "{wordDefinitions.word}":
+          {wordDefinitions && (
+            <div className="bg-blue-100 mt-6 p-4 rounded-lg">
+              <h4 className="font-bold text-blue-800">
+                Meaning of "{wordDefinitions.word}"
               </h4>
-              <p className="text-blue-600">{wordDefinitions.definition}</p>
+              <p>{wordDefinitions.definition}</p>
               {wordDefinitions.synonyms.length > 0 && (
-                <p className="text-blue-500">
-                  <strong>Synonyms:</strong> {wordDefinitions.synonyms.join(', ')}
+                <p>
+                  <strong>Synonyms:</strong> {wordDefinitions.synonyms.join(", ")}
                 </p>
               )}
             </div>
-          )}    
+          )}
 
           {isTestCompleted && (
-            <div className="mt-8 bg-gradient-to-r from-purple-100 to-blue-100 p-6 rounded-lg shadow-md text-left">
-              <h4 className="text-lg font-semibold text-purple-800 mb-2">Results:</h4>
-              <p className="text-gray-800 mb-1">
-                Time Taken: <span className="font-bold">{readingTime.toFixed(2)} seconds</span>
-              </p>
-              <p className="text-gray-800 mb-1">
-                Reading Speed: <span className="font-bold">{readingSpeed} WPM</span>
-              </p>
+            <div className="mt-6 bg-purple-100 p-4 rounded-lg">
+              <p><strong>Time:</strong> {readingTime.toFixed(2)} sec</p>
+              <p><strong>Speed:</strong> {readingSpeed} WPM</p>
               {fluencyRating !== null && (
-                <p className="text-gray-800 mb-1">
-                  Fluency Rating: <span className="font-bold">{fluencyRating}</span>
-                </p>
+                <p><strong>Fluency Score:</strong> {fluencyRating}</p>
               )}
             </div>
           )}
         </div>
       )}
+
+      <ChatWidget pageContext="reading-assistance" />
+
+      <audio ref={audioRef} style={{ display: "none" }} />
     </div>
   );
-}
+};
 
 export default ReadingAssistanceTool;

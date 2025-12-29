@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import ChatWidget from '../components/ChatWidget';
 
 const WritingAssistant = () => {
   const [userText, setUserText] = useState('');
@@ -113,6 +114,7 @@ const WritingAssistant = () => {
           <p className="text-gray-800 leading-relaxed">{improvedText}</p>
         </div>
       )}
+      <ChatWidget pageContext="writing-assistant" />
     </div>
   );
 };

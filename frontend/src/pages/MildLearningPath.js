@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import {  FaHeadphones,  FaBookOpen} from 'react-icons/fa'; // Icons for the cards
+import { FaHeadphones, FaBookOpen } from 'react-icons/fa'; // Icons for the cards
+import ChatWidget from '../components/ChatWidget';
 
 const readingAssistanceOptions = [
   {
@@ -62,6 +63,7 @@ const MildLearningPathPage = () => {
           </div>
         ))}
       </div>
+      <ChatWidget pageContext="mild-learning-path" />
     </section>
   );
 };

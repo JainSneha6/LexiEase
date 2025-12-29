@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FaMicrophone, FaHeadphones, FaPuzzlePiece, FaBookOpen } from 'react-icons/fa'; // Icons for the cards
+import ChatWidget from '../components/ChatWidget';
 
 const moderateLearningPathOptions = [
   {
@@ -75,6 +76,7 @@ const SevereLearningPathPage = () => {
           </div>
         ))}
       </div>
+      <ChatWidget pageContext="severe-learning-path" />
     </section>
   );
 };
