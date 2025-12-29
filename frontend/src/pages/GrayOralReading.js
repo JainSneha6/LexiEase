@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ToastContainer, toast } from 'react-toastify';
 import axios from 'axios';
 import 'react-toastify/dist/ReactToastify.css';
@@ -6,18 +6,24 @@ import ChatWidget from '../components/ChatWidget';
 
 const GrayOralReadingTest = () => {
   const [isReading, setIsReading] = useState(false);
-  const [isRecording, setIsRecording] = useState(false);
   const [mediaRecorder, setMediaRecorder] = useState(null);
   const [audioBlob, setAudioBlob] = useState(null);
+
   const [readingTime, setReadingTime] = useState(0);
-  const [isTestCompleted, setIsTestCompleted] = useState(false);
   const [readingSpeed, setReadingSpeed] = useState(0);
   const [fluencyRating, setFluencyRating] = useState(null);
   const [startTime, setStartTime] = useState(null);
+  const [isTestCompleted, setIsTestCompleted] = useState(false);
+
+  const [feedbackText, setFeedbackText] = useState("");
+  const [feedbackAudio, setFeedbackAudio] = useState(null);
+
+  const feedbackAudioRef = useRef(null);
 
   const passage =
     'The sun is bright in the sky. Birds fly high and sing sweet songs. Trees sway gently in the wind. Grass is green and soft underfoot. Children laugh and play outside. They run, jump, and chase each other. A dog wags its tail and joins the fun. Everyone enjoys this nice day. Nature is full of life and happiness.';
 
+  /* ---------------- START RECORDING ---------------- */
   const handleStartReading = async () => {
     setIsReading(true);
     setStartTime(Date.now());
@@ -28,134 +34,152 @@ const GrayOralReadingTest = () => {
       setMediaRecorder(recorder);
 
       let chunks = [];
-      recorder.ondataavailable = (event) => {
-        chunks.push(event.data);
-      };
+
+      recorder.ondataavailable = (e) => chunks.push(e.data);
 
       recorder.onstop = () => {
         const blob = new Blob(chunks, { type: 'audio/wav' });
         setAudioBlob(blob);
-        setIsRecording(false);
-      };
-
-      recorder.onerror = (event) => {
-        console.error('MediaRecorder error:', event.error);
-        toast.error('MediaRecorder error occurred.');
       };
 
       recorder.start();
-      setIsRecording(true);
-    } catch (error) {
-      console.error('Error accessing microphone:', error);
-      toast.error('Error accessing microphone. Please check your permissions.');
+    } catch (err) {
+      toast.error("Microphone access denied.");
       setIsReading(false);
     }
   };
 
+  /* ---------------- STOP READING ---------------- */
   const handleFinishReading = () => {
     setIsReading(false);
+
     const timeTaken = (Date.now() - startTime) / 1000;
     setReadingTime(timeTaken);
-    setIsTestCompleted(true);
 
-    const wordsInPassage = passage.split(' ').length;
-    const speed = (wordsInPassage / (timeTaken / 60)).toFixed(2);
+    const words = passage.split(" ").length;
+    const speed = (words / (timeTaken / 60)).toFixed(2);
     setReadingSpeed(speed);
 
-    if (mediaRecorder) {
-      mediaRecorder.stop();
-    } else {
-      toast.error('Recording not started correctly.');
-    }
+    setIsTestCompleted(true);
+
+    if (mediaRecorder) mediaRecorder.stop();
   };
 
-  const saveResultsToBackend = async (speed, timeTaken) => {
-
-
-    try {
-      await axios.post(
-        'http://localhost:5000/api/save-reading-results',
-        { readingSpeed: speed, timeTaken },
-      );
-      toast.success('Results saved successfully!');
-    } catch (error) {
-      console.error('Error saving results:', error.response ? error.response.data : error.message);
-      toast.error('Error saving results!');
-    }
-  };
-
+  /* ---------------- SEND AUDIO TO BACKEND ---------------- */
   const uploadAudioToBackend = async () => {
-    if (!audioBlob) {
-      toast.error('No audio recorded!');
-      return;
-    }
+    if (!audioBlob) return;
+
     const formData = new FormData();
-    formData.append('audio', audioBlob, 'reading-test.wav');
+    formData.append("audio", audioBlob, "reading.wav");
+    formData.append("readingSpeed", readingSpeed);
+    formData.append("timeTaken", readingTime);
 
     try {
-      const response = await axios.post('http://localhost:5000/api/upload-audio', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      const res = await axios.post(
+        "http://localhost:5000/api/upload-audio",
+        formData,
+        { headers: { "Content-Type": "multipart/form-data" } }
+      );
 
-      setFluencyRating(response.data.fluency_rating);
-      toast.success('Audio uploaded successfully!');
-    } catch (error) {
-      console.error('Error uploading audio:', error.response ? error.response.data : error.message);
-      toast.error('Error uploading audio!');
+      setFluencyRating(res.data.fluency_rating);
+      setFeedbackText(res.data.feedback_text || "");
+
+      if (res.data.feedback_audio) {
+        const audioUrl = `http://localhost:5000/api/audio/${res.data.feedback_audio}`;
+        setFeedbackAudio(audioUrl);
+
+        // auto-play feedback
+        setTimeout(() => {
+          feedbackAudioRef.current?.play().catch(() => { });
+        }, 300);
+      }
+
+      toast.success("Reading analyzed successfully!");
+    } catch (err) {
+      toast.error("Error analyzing reading.");
     }
   };
 
+  /* ---------------- TRIGGER BACKEND AFTER RECORDING ---------------- */
   useEffect(() => {
     if (isTestCompleted && audioBlob) {
-      saveResultsToBackend(readingSpeed, readingTime);
       uploadAudioToBackend();
     }
   }, [isTestCompleted, audioBlob]);
 
   return (
-    <div className="bg-gradient-to-r from-green-200 via-blue-200 to-purple-200 min-h-screen p-8 flex flex-col items-center" style={{ fontFamily: 'OpenDyslexic', lineHeight: '1.5' }}>
+    <div
+      className="bg-gradient-to-r from-green-200 via-blue-200 to-purple-200 min-h-screen p-8 flex flex-col items-center"
+      style={{ fontFamily: 'OpenDyslexic', lineHeight: '1.5' }}
+    >
       <ToastContainer />
-      <h2 className="text-4xl font-bold text-blue-800 mb-8 text-center">Gray Oral Reading Test</h2>
+
+      <h2 className="text-4xl font-bold text-blue-800 mb-8 text-center">
+        Gray Oral Reading Test
+      </h2>
 
       <div className="bg-white shadow-lg rounded-lg p-8 max-w-lg w-full mx-auto text-center">
+
         <h3 className="text-xl font-bold mb-4">Read the following passage:</h3>
-        <p className="text-gray-700 mb-4">{passage}</p>
+
+        <p className="text-gray-700 mb-6">{passage}</p>
 
         {!isReading ? (
           <button
             onClick={handleStartReading}
-            className="bg-gradient-to-r from-green-400 to-green-600 text-white px-6 py-3 rounded-full shadow-lg hover:shadow-xl transition duration-300 ease-in-out transform hover:scale-105"
+            className="bg-green-500 text-white px-6 py-3 rounded-full shadow hover:scale-105 transition"
           >
             Start Reading
           </button>
         ) : (
           <button
             onClick={handleFinishReading}
-            className="bg-gradient-to-r from-red-400 to-red-600 text-white px-6 py-3 rounded-full shadow-lg hover:shadow-xl transition duration-300 ease-in-out transform hover:scale-105"
+            className="bg-red-500 text-white px-6 py-3 rounded-full shadow hover:scale-105 transition"
           >
             Finish Reading
           </button>
         )}
 
         {isTestCompleted && (
-          <div className="mt-8 bg-gradient-to-r from-purple-100 to-blue-100 p-6 rounded-lg shadow-md text-left">
-            <h4 className="text-lg font-semibold text-purple-800 mb-2">Results:</h4>
-            <p className="text-gray-800 mb-1">
-              Time Taken: <span className="font-semibold">{readingTime.toFixed(2)} seconds</span>
+          <div className="mt-8 bg-purple-100 p-5 rounded-lg text-left">
+            <h4 className="font-semibold text-purple-800 mb-2">Results</h4>
+
+            <p>
+              <strong>Time Taken:</strong> {readingTime.toFixed(2)} seconds
             </p>
-            <p className="text-gray-800 mb-1">
-              Reading Speed: <span className="font-semibold">{readingSpeed} words per minute</span>
+
+            <p>
+              <strong>Reading Speed:</strong> {readingSpeed} WPM
             </p>
+
             {fluencyRating !== null && (
-              <p className="text-gray-800">
-                Fluency Rating: <span className="font-semibold">{fluencyRating}</span>
+              <p>
+                <strong>Fluency Score:</strong> {fluencyRating}
               </p>
             )}
           </div>
         )}
+
+        {/* === FEEDBACK SECTION === */}
+        {feedbackText && (
+          <div className="mt-6 bg-green-100 p-5 rounded-lg shadow">
+            <h4 className="font-semibold text-green-800 mb-2">
+              Lexi’s Feedback
+            </h4>
+
+            <p className="text-gray-800">{feedbackText}</p>
+
+            {feedbackAudio && (
+              <audio
+                ref={feedbackAudioRef}
+                src={feedbackAudio}
+                className="mt-3 w-full"
+              />
+            )}
+          </div>
+        )}
       </div>
+
       <ChatWidget pageContext="gray-oral-reading-test" />
     </div>
   );

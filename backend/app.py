@@ -92,35 +92,85 @@ def save_reading_results():
 
 @app.route('/api/upload-audio', methods=['POST'])
 def upload_audio():
-
     if 'audio' not in request.files:
         return jsonify(message='No audio file provided!'), 400
 
     audio_file = request.files['audio']
-    audio_path = os.path.join('uploads', f'reading_test.wav')
+    audio_path = os.path.join('uploads', 'reading_test.wav')
     audio_file.save(audio_path)
 
-    fluency_rating = assess_fluency(audio_path)
-    
-    print(fluency_rating)
+    # TEMP values (frontend already computes these)
+    speed = float(request.form.get("readingSpeed", 0))
+    time_taken = float(request.form.get("timeTaken", 0))
 
-    return jsonify(message='Audio uploaded successfully!', fluency_rating=fluency_rating), 200
+    fluency_score, feedback_text = assess_fluency_and_feedback(
+        audio_path,
+        speed,
+        time_taken
+    )
 
-def assess_fluency(audio_path):
-    prompt = "Rate the fluency of the audio from 100. Just give me the number."
-    user_audio_file = genai.upload_file(path=audio_path)
-    response = model.generate_content([user_audio_file, prompt])
-    
-    fluency_rating = extract_fluency_rating(response.text)
-    return fluency_rating
+    # Convert feedback → speech
+    feedback_audio = tts_generate_and_save(feedback_text)
 
-def extract_fluency_rating(response_text):
-    try:
-        fluency_rating = int(response_text.strip())
-        return fluency_rating
-    except ValueError:
-        print("Error extracting fluency rating:", response_text)
-        return 0
+    return jsonify(
+        fluency_rating=fluency_score,
+        feedback_text=feedback_text,
+        feedback_audio=feedback_audio
+    ), 200
+
+
+def assess_fluency_and_feedback(audio_path, speed, time_taken):
+    with open(audio_path, "rb") as f:
+        audio_bytes = f.read()
+
+    prompt = f"""
+You are a kind reading coach helping a learner with dyslexia.
+
+Evaluate the reading based on the audio.
+
+Return:
+1. A fluency score from 0 to 100 (number only)
+2. A short spoken feedback (max 4 sentences)
+
+Rules:
+- Use very simple language
+- Be encouraging
+- Mention one good thing
+- Suggest ONE gentle improvement
+- Mention mispronounced words if any
+- Do NOT be harsh
+"""
+
+    response = client.models.generate_content(
+        model=MODEL_NAME,
+        contents=[
+            types.Part.from_bytes(
+                data=audio_bytes,
+                mime_type="audio/wav"
+            ),
+            f"""
+Reading speed: {speed} words per minute
+Time taken: {time_taken:.2f} seconds
+
+{prompt}
+"""
+        ],
+    )
+
+    text = response.text.strip()
+
+    # --- Extract fluency score ---
+    score = 0
+    feedback = text
+
+    import re
+    match = re.search(r"(\d{1,3})", text)
+    if match:
+        score = int(match.group(1))
+
+    return score, feedback
+
+
 
 @app.route('/api/writing-assistant', methods=['POST'])
 def writing_assistant():
@@ -759,6 +809,60 @@ def tts_endpoint():
         print("TTS endpoint error:", e)
         traceback.print_exc()
         return jsonify(message="Error synthesizing audio"), 500
+
+@app.route("/api/verify-object", methods=["POST"])
+def verify_object():
+    data = request.get_json()
+    user_answer = (data.get("answer") or "").lower().strip()
+    correct_word = (data.get("correct") or "").lower().strip()
+
+    if not user_answer:
+        return jsonify({"ok": False, "message": "Please say something."}), 400
+
+    prompt = f"""
+You are checking if a child correctly named an object.
+
+Correct word: "{correct_word}"
+User said: "{user_answer}"
+
+Reply ONLY with:
+YES  → if the meaning or pronunciation matches
+NO   → if it does not match
+"""
+
+    try:
+        response = client.models.generate_content(
+            model=MODEL_NAME,
+            contents=[prompt]
+        )
+
+        result = (response.text or "").strip().upper()
+
+        is_correct = "YES" in result
+
+        if is_correct:
+            feedback = "Yes, that is correct. Now spell the word."
+        else:
+            feedback = "Not quite. Look again and try saying the word."
+
+        audio_file = tts_generate_and_save(feedback)
+
+        return jsonify(
+            correct=is_correct,
+            feedback=feedback,
+            audio_filename=audio_file
+        )
+
+    except Exception as e:
+        print("verify_object error:", e)
+        traceback.print_exc()
+
+        return jsonify(
+            correct=False,
+            feedback="Something went wrong. Please try again.",
+            audio_filename=None
+        ), 500
+
 
     
 if __name__ == '__main__':
