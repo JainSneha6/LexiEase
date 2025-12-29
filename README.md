@@ -1,8 +1,6 @@
 # LexiEase AI - An AI Powered Dyslexic Support System
 
-**LexiEase AI** is an AI-powered system that offers personalized learning support for individuals with dyslexia. The platform provides dyslexia screening, tailored learning paths, and various assistive tools to improve accessibility and enhance learning outcomes for dyslexic individuals. 
-
-<img width="952" height="533" alt="image" src="https://github.com/user-attachments/assets/cdc28302-987e-4d03-8836-cd8ccdf26cf3" />
+**LexiEase AI** is an **AI-powered, voice-first learning platform** designed to support individuals with dyslexia through **high-quality speech synthesis, phonological training, and multimodal learning experiences**.
 
 ---
 
@@ -27,12 +25,6 @@
   - [AI-Powered Document Simplification](#3-ai-powered-document-simplification)
   - [Notes & Mind Map Generation from PDF](#4-notes--mind-map-generation-from-pdf)
 - [Technology Stack](#technology-stack)
-- [Impact of Dyslexic Support System for Thales](#impact-of-dyslexic-support-system-for-thales)
-  - [Core Capabilities](#core-capabilities)
-  - [Defence & Security](#defence--security)
-  - [Aeronautics & Space](#aeronautics--space)
-  - [Cybersecurity & Digital Identity](#cybersecurity--digital-identity)
-  - [Cross-Domain Benefits](#cross-domain-benefits)
 - [Project Architecture](#project-architecture)
 - [User Flow](#user-flow)
 - [Snapshots of our Project](#snapshots-of-our-project)
@@ -41,24 +33,35 @@
 
 ## Introduction
 
-Welcome to **LexiEaseAI** – a powerful, AI-driven learning platform designed to enhance cognitive skills, reading abilities, and academic performance through personalized assessments and support tools. Leveraging advanced AI technology, LexiEaseAI offers users tailored tests, interactive learning paths, and engaging resources that cater to their unique learning needs.
+Dyslexia is fundamentally a **language-processing challenge**, and **voice is the most powerful accessibility interface**.
 
-Whether you’re aiming to improve phonological awareness, boost reading comprehension, or simplify complex documents, LexiEaseAI is here to make learning accessible, efficient, and enjoyable. With intuitive tools like memory games, mind map generation, and real-time chat assistance, this platform empowers learners of all backgrounds to reach their full potential.
+LexiEase places **AI-generated speech at the core of learning**:
+- Listening before reading  
+- Understanding rhythm, stress, and pronunciation  
+- Reinforcing phonological awareness through sound  
 
-<img width="947" height="533" alt="image" src="https://github.com/user-attachments/assets/c1ae44db-fac8-4b6c-8917-b3df684e2138" />
+> **Voice is not an add-on in LexiEase — it is the primary learning medium.**
+
+This makes LexiEase a natural fit for **ElevenLabs’ mission** of making information universally accessible through high-quality voice AI.
 
 ---
 
 ## What Problems Does LexiEase AI Solve?
 
-1. **Limited Access to Dyslexia Screening**  
-   Many individuals with dyslexia struggle to get timely and affordable screenings, leading to delayed interventions and missed educational opportunities.
+**1. Limited Access to Dyslexia Screening**:
 
-2. **Lack of Personalized Learning Paths**  
-   Traditional learning resources are not tailored to the unique needs of dyslexic learners, making it harder for them to achieve their full potential in conventional educational settings.
+Early diagnosis is expensive and inaccessible for many learners.
+> **Voice-guided AI screening tests** lower barriers and reduce anxiety.
 
-3. **Insufficient Support Tools for Dyslexic Learners**  
-   Dyslexic individuals often lack access to specialized tools, like writing assistants and document simplifiers, that can make reading and learning more accessible and enjoyable.
+**2. Text-Heavy Learning Platforms**: 
+
+Traditional platforms overload dyslexic learners with dense text.
+> **Everything in LexiEase can be listened to**, reducing cognitive fatigue.
+
+**3. Low Reading Confidence & Retention**:
+
+Silent reading increases stress and slows comprehension.
+> **Narrated content and spoken feedback** build confidence and fluency.
 
 ---
 
@@ -106,8 +109,6 @@ Whether you’re aiming to improve phonological awareness, boost reading compreh
 
 ## Dyslexia Screening Tests
 
-<img width="946" height="528" alt="image" src="https://github.com/user-attachments/assets/388cae9c-8371-420c-9903-fad13c83f248" />
-
 ### 1. Phonological Awareness Test
 - A cognitive test designed to assess the user's ability to identify and manipulate sounds in spoken words.  
 - Includes various subtests to measure awareness of phonemes, syllables, and rhymes.  
@@ -126,8 +127,6 @@ Whether you’re aiming to improve phonological awareness, boost reading compreh
 ---
 
 ## Personalized Learning Paths
-
-<img width="946" height="532" alt="image" src="https://github.com/user-attachments/assets/c467f4ed-4dc3-40bd-910b-475dca7d0eed" />
 
 ### 1. Reading Aloud Support
 - Text-to-speech functionality to read out content for users, particularly those with visual impairments or learning disabilities.  
@@ -152,8 +151,6 @@ Whether you’re aiming to improve phonological awareness, boost reading compreh
 ---
 
 ## Other Features
-
-<img width="947" height="532" alt="image" src="https://github.com/user-attachments/assets/043feb34-a031-41b1-99d9-7a1df510d8b5" />
 
 ### 1. AI-Powered Writing Support
 - Extracts text from documents or images using a fine-tuned OCR pipeline.  
@@ -191,61 +188,7 @@ Whether you’re aiming to improve phonological awareness, boost reading compreh
 | Authentication & Security | OAuth2, bcrypt, JWT |
 | Accessibility | OpenDyslexic fonts, Dyslexic-friendly spacing | 
 
-## Impact of Dyslexic Support System for Thales
-
-> **Focus:** how **LexiEase** (dyslexic support) delivers concrete value across Thales’s **Defence & Security**, **Aeronautics & Space**, and **Cybersecurity & Digital Identity** domains.
-
-<img width="945" height="531" alt="image" src="https://github.com/user-attachments/assets/0562c2c3-1685-4eb8-bc17-244a12140f3b" />
-
 ---
-
-### Core Capabilities
-- **Document simplification**, **text-to-speech (TTS)**, and **multimodal presentation** (audio + text + visuals)  
-- **Personalized spaced-repetition learning**  
-- **Side-by-side simplified + original documents** for legal/technical fidelity  
-- **Comprehension analytics** to identify confusion points  
-- **Secure, on-prem or hybrid deployments** with **audit trails**
-
----
-
-### Defence & Security
-- **Faster mission readiness:** Simplified procedures and TTS shorten time-to-proficiency for dyslexic personnel.  
-- **Reduced human error:** Clear SOPs and dual-view documents minimize misinterpretation in critical operations.  
-- **Inclusive workforce:** Tailored training improves recruitment, retention, and access to neurodiverse talent.  
-- **Secure assessments:** On-prem deployments and audit logs maintain classification and medico-legal compliance.
-
----
-
-### Aeronautics & Space
-- **Reliable maintenance & manuals:** Dyslexia-friendly versions of complex technical content reduce maintenance errors.  
-- **Safer crew responses:** Multimodal emergency procedures accelerate comprehension and reaction times.  
-- **Human factors insight:** Analytics highlight confusion points to enhance cockpit documentation and design.  
-- **Faster certification:** Personalized learning paths shorten simulator and qualification timelines.
-
----
-
-### Cybersecurity & Digital Identity
-- **Clear identity flows:** Simplified onboarding and admin documentation prevent configuration errors.  
-- **Phishing resilience:** Personalized microlearning and spaced repetition improve detection of social engineering.  
-- **Secure integration:** Compatible with SSO/ABAC and encrypted storage—ensuring accessibility without compromising security.  
-- **Privacy alignment:** Consent, anonymization, and audit features support compliance in identity-linked data use.
-
----
-
-### Cross-Domain Benefits
-- **Safety & mission assurance:** Simplified content reduces errors that could trigger safety incidents.  
-- **Workforce resilience:** Enables continuous upskilling and neurodiverse inclusion.  
-- **Operational savings:** Lower instructor time, fewer remediation sessions, and reduced rework.  
-- **Flexible deployment:** Cloud, hybrid, or fully on-prem—including air-gapped environments.
-
----
-
-**Bottom Line:**  
-**LexiEase** transforms complex technical, operational, and cybersecurity materials into **accessible, secure, and audit-ready formats**—empowering dyslexic personnel to perform safely, efficiently, and confidently across Thales’s high-stakes domains.
-
----
-
-
 
 
 ## Project Architecture
