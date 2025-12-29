@@ -1,17 +1,38 @@
 from flask import Flask, request, jsonify, send_file
+from flask import Flask, request, jsonify, send_file, abort
+from werkzeug.utils import safe_join
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 import os
-import google.generativeai as genai
+
 import re
 import traceback
+from pathlib import Path
+from elevenlabs.client import ElevenLabs
+from dotenv import load_dotenv
+import uuid
+from google import genai
+from google.genai import types
 
-API_KEY = "AIzaSyC6X83C-yPa-KYJnajVxPIYvisYOcQcqmc"
-genai.configure(api_key=API_KEY)
-model = genai.GenerativeModel('gemini-2.5-flash')
+load_dotenv()
+# Configure APIs (set env vars)
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
+ELEVEN_VOICE_ID = os.getenv("ELEVEN_VOICE_ID", "TRnaQb7q41oL7sV0w6Bu")
+
+if not GEMINI_API_KEY or not ELEVENLABS_API_KEY:
+    raise RuntimeError("Please set GEMINI_API_KEY and ELEVENLABS_API_KEY in .env")
+
+client = genai.Client(api_key=GEMINI_API_KEY)
+MODEL_NAME = "gemini-2.5-flash"
+
+# configure ElevenLabs
+eleven = ElevenLabs(api_key=ELEVENLABS_API_KEY)
+ELEVEN_OUTPUT_FORMAT = "mp3_44100_128"  # valid output format
+
 
 app = Flask(__name__)
 CORS(app, supports_credentials=True, resources={r"/api/*": {"origins": "http://localhost:3000"}})
@@ -21,8 +42,8 @@ app.config['JWT_SECRET_KEY'] = 'super-secret-key'
 db = SQLAlchemy(app)
 jwt = JWTManager(app)  
 
-UPLOAD_FOLDER = 'uploads'
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+UPLOAD_FOLDER = Path("uploads")
+UPLOAD_FOLDER.mkdir(parents=True, exist_ok=True)
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -267,59 +288,112 @@ def extract_key_points_from_gemini(text):
         return []
     
 def save_file(file, prefix):
-    """Save the file securely and return its path."""
+    """Save uploaded file securely and return path."""
     filename = secure_filename(f"{prefix}_{file.filename}")
-    filepath = os.path.join('uploads', filename)
-    file.save(filepath)
-    return filepath
+    filepath = UPLOAD_FOLDER / filename
+    file.save(str(filepath))
+    return str(filepath)
 
 def handle_gemini_prompt(file_path=None, text_prompt=None):
-    """Send the file or text to Gemini AI for processing."""
     try:
+        parts = []
+
+        # Attach file if provided
         if file_path:
-            uploaded_file = genai.upload_file(path=file_path)
-            response = model.generate_content([uploaded_file, text_prompt])
-        else:
-            response = model.generate_content([text_prompt])
-        
-        return response.text.replace('**', '').replace('*', '').strip()
+            with open(file_path, "rb") as f:
+                data = f.read()
+
+            if file_path.lower().endswith((".png", ".jpg", ".jpeg")):
+                mime = "image/jpeg"
+            elif file_path.lower().endswith(".wav"):
+                mime = "audio/wav"
+            elif file_path.lower().endswith(".mp3"):
+                mime = "audio/mpeg"
+            else:
+                mime = "application/octet-stream"
+
+            parts.append(
+                types.Part.from_bytes(
+                    data=data,
+                    mime_type=mime
+                )
+            )
+
+        # Add text prompt
+        if text_prompt:
+            parts.append(text_prompt)
+
+        response = client.models.generate_content(
+            model=MODEL_NAME,
+            contents=parts,
+        )
+
+        return response.text.strip()
+
     except Exception as e:
-        print(f"Error generating content: {e}")
-        return "Error generating content."
+        print("Gemini Error:", e)
+        traceback.print_exc()
+        return "Sorry, I couldn't process that request."
+
     
-@app.route('/api/ask', methods=['POST'])
+@app.route("/api/audio/<path:filename>", methods=["GET"])
+def serve_audio(filename):
+    """Serve audio files from uploads safely."""
+    # Prevent path traversal
+    safe_path = safe_join(str(UPLOAD_FOLDER), filename)
+    if not safe_path:
+        abort(404)
+    full_path = Path(safe_path)
+    if not full_path.exists():
+        abort(404)
+    # Use send_file with proper mimetype
+    return send_file(str(full_path), mimetype="audio/mpeg")
+    
+@app.route("/api/ask", methods=["POST"])
 def ask():
-    user_text = request.form.get('text')
-    print(user_text)
-    user_image = request.files.get('image') if 'image' in request.files else None
-    print(user_image)
-    user_audio = request.files.get('audio') if 'audio' in request.files else None
-    print(user_audio)
-    
+    """
+    Accepts form-data:
+    - text (optional)
+    - image (optional file)
+    - audio (optional file)  <-- will be sent to Gemini as a file (Gemini can accept uploaded audio)
+    Returns JSON: {response: text, audio_filename: "<name>.mp3"}
+    """
     try:
+        user_text = request.form.get("text")
+        user_image = request.files.get("image") if "image" in request.files else None
+        user_audio = request.files.get("audio") if "audio" in request.files else None
+
+        # Build prompt / call Gemini
         if user_text and user_image:
-            image_path = save_file(user_image, 'user_image')
-            prompt = f"Answer the question using the text and image for a dyslexic person: '{user_text}'"
-            response = handle_gemini_prompt(file_path=image_path, text_prompt=prompt)
+            image_path = save_file(user_image, "user_image")
+            prompt = f"Answer clearly and simply for a dyslexic person: '{user_text}'"
+            g_response = handle_gemini_prompt(file_path=image_path, text_prompt=prompt)
         elif user_text:
-            prompt = f"Answer the question for a dyslexic person: '{user_text}'"
-            response = handle_gemini_prompt(text_prompt=prompt)
+            prompt = f"Answer clearly and simply for a dyslexic person: '{user_text}'"
+            g_response = handle_gemini_prompt(text_prompt=prompt)
         elif user_image:
-            image_path = save_file(user_image, 'user_image')
-            prompt = "Answer the question using the image for a dyslexic person."
-            response = handle_gemini_prompt(file_path=image_path, text_prompt=prompt)
+            image_path = save_file(user_image, "user_image")
+            prompt = "Describe the image and answer simply for a dyslexic person."
+            g_response = handle_gemini_prompt(file_path=image_path, text_prompt=prompt)
         elif user_audio:
-            audio_path = save_file(user_audio, 'user_audio')
-            prompt = "Answer the question asked in the the audio by a dyslexic person."
-            response = handle_gemini_prompt(file_path=audio_path, text_prompt=prompt)
+            audio_path = save_file(user_audio, "user_audio")
+            prompt = "Transcribe or answer the question asked in this audio, keep the reply short and dyslexic-friendly."
+            g_response = handle_gemini_prompt(file_path=audio_path, text_prompt=prompt)
         else:
-            return jsonify(message='No valid input provided!'), 400
-            
-        return jsonify(message='Response generated successfully!', response=response), 200
-    
+            return jsonify(message="No valid input provided!"), 400
+
+        # Generate TTS for the bot reply
+        audio_filename = tts_generate_and_save(g_response)
+        if audio_filename is None:
+            # TTS failed: return text only
+            return jsonify(message="Response generated", response=g_response, audio_filename=None), 200
+
+        return jsonify(message="Response generated", response=g_response, audio_filename=audio_filename), 200
+
     except Exception as e:
-        print(f"Error generating content: {e}")
-        return jsonify(message='Error generating improved text!'), 500
+        print("Error in /api/ask:", e)
+        traceback.print_exc()
+        return jsonify(message="Error generating response"), 500
     
 total_questions = 0
 correct_answers = 0
@@ -353,6 +427,31 @@ def check_spelling_from_image(img_path, word):
         print(f"An error occurred while checking spelling: {e}")
         traceback.print_exc()  
         raise
+
+def tts_generate_and_save(text, voice_id=ELEVEN_VOICE_ID, output_format=ELEVEN_OUTPUT_FORMAT):
+    """Call ElevenLabs to synthesize text and save MP3 file. Returns filename."""
+    # create unique filename
+    filename = f"bot_resp_{uuid.uuid4().hex}.mp3"
+    filepath = UPLOAD_FOLDER / filename
+
+    try:
+        audio_generator = eleven.text_to_speech.convert(
+            text=text,
+            voice_id=voice_id,
+            model_id="eleven_multilingual_v2",
+            output_format=output_format,
+        )
+        # write chunks
+        with open(filepath, "wb") as f:
+            for chunk in audio_generator:
+                if chunk:
+                    f.write(chunk)
+        return filename
+    except Exception as e:
+        print("ElevenLabs TTS error:", e)
+        traceback.print_exc()
+        return None
+
 
 @app.route('/api/upload_image', methods=['POST'])
 def upload_image():
