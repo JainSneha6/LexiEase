@@ -6,6 +6,8 @@ import paragraphs from '../utils/ReadingParagraphs';
 import AudioPlayer from '../components/AudioPlayer';
 import ChatWidget from '../components/ChatWidget';
 
+const API_BASE = "http://localhost:5000";
+
 const ReadingAssistanceTool = () => {
   const [isReading, setIsReading] = useState(false);
   const [mediaRecorder, setMediaRecorder] = useState(null);
@@ -20,41 +22,64 @@ const ReadingAssistanceTool = () => {
   const [wordDefinitions, setWordDefinitions] = useState(null);
 
   const audioRef = useRef(null);
+  const introPlayedRef = useRef(false);
 
+  /* ✅ Dyslexia-friendly text style */
   const dyslexiaStyle = {
     fontFamily: 'OpenDyslexic, sans-serif',
     lineHeight: '2',
-    letterSpacing: '0.1em',
+    letterSpacing: '0.08em',
     wordSpacing: '0.15em',
-    backgroundColor: '#F0F8FF',
+    backgroundColor: '#F8FBFF',
     color: '#333',
-    padding: '10px',
-    fontSize: '1.2rem',
+    padding: '12px',
+    borderRadius: '8px',
   };
 
-  /* ---------------- ELEVENLABS TTS ---------------- */
+  /* ================= ELEVENLABS SPEECH ================= */
   const speakText = async (text) => {
+    if (!text?.trim()) return;
+
     try {
-      const res = await fetch("http://localhost:5000/api/tts", {
+      const res = await fetch(`${API_BASE}/api/tts`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text }),
       });
 
       const data = await res.json();
+      if (!data?.audio_filename) return;
 
-      if (data?.audio_filename) {
-        audioRef.current.src = `http://localhost:5000/api/audio/${encodeURIComponent(
-          data.audio_filename
-        )}`;
-        audioRef.current.play().catch(() => { });
+      audioRef.current.src = `${API_BASE}/api/audio/${encodeURIComponent(
+        data.audio_filename
+      )}`;
+
+      try {
+        await audioRef.current.play();
+      } catch {
+        // autoplay blocked
       }
     } catch (err) {
       console.error("TTS error:", err);
     }
   };
 
-  /* ---------------- Reading Recording Logic ---------------- */
+  /* ================= INTRO VOICE (ONCE) ================= */
+  useEffect(() => {
+    if (introPlayedRef.current) return;
+    introPlayedRef.current = true;
+
+    speakText(
+      "Welcome!" +
+      "You can listen to each sentence using the listen button. " +
+      "When ready, press start reading and read the passage aloud. " +
+      "Click finish reading when you are done to get your fluency score. " +
+      "You can also tap on words to check their meanings. " +
+      "All the best!"
+    );
+  }, []);
+
+  /* ================= RECORDING ================= */
   const handleStartReading = async () => {
     setIsReading(true);
     setStartTime(Date.now());
@@ -68,12 +93,12 @@ const ReadingAssistanceTool = () => {
       recorder.ondataavailable = (e) => chunks.push(e.data);
 
       recorder.onstop = () => {
-        const blob = new Blob(chunks, { type: 'audio/wav' });
+        const blob = new Blob(chunks, { type: "audio/wav" });
         setAudioBlob(blob);
       };
 
       recorder.start();
-    } catch (err) {
+    } catch {
       toast.error("Microphone access denied.");
       setIsReading(false);
     }
@@ -92,7 +117,7 @@ const ReadingAssistanceTool = () => {
     if (mediaRecorder) mediaRecorder.stop();
   };
 
-  /* ---------------- Upload reading audio ---------------- */
+  /* ================= SEND AUDIO FOR ANALYSIS ================= */
   useEffect(() => {
     if (!audioBlob || !isTestCompleted) return;
 
@@ -101,10 +126,10 @@ const ReadingAssistanceTool = () => {
       formData.append("audio", audioBlob, "reading.wav");
 
       try {
-        const res = await axios.post("http://localhost:5000/api/upload-audio", formData);
+        const res = await axios.post(`${API_BASE}/api/upload-audio`, formData);
         setFluencyRating(res.data.fluency_rating);
         toast.success("Fluency evaluated successfully!");
-      } catch (err) {
+      } catch {
         toast.error("Failed to analyze fluency.");
       }
     };
@@ -112,17 +137,19 @@ const ReadingAssistanceTool = () => {
     upload();
   }, [audioBlob, isTestCompleted]);
 
-  /* ---------------- Sentence reader using ElevenLabs ---------------- */
+  /* ================= SENTENCE SPEECH ================= */
   const handleReadSentence = async (sentence, index) => {
     setCurrentSentenceIndex(index);
     await speakText(sentence);
     setCurrentSentenceIndex(null);
   };
 
-  /* ---------------- Word definition ---------------- */
+  /* ================= WORD MEANING ================= */
   const handleWordClick = async (word) => {
     try {
-      const res = await axios.get(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`);
+      const res = await axios.get(
+        `https://api.dictionaryapi.dev/api/v2/entries/en/${word}`
+      );
       const data = res.data[0];
       setWordDefinitions({
         word,
@@ -137,7 +164,7 @@ const ReadingAssistanceTool = () => {
   return (
     <div
       className="bg-gradient-to-r from-green-200 via-blue-200 to-purple-200 min-h-screen p-8 flex flex-col items-center"
-      style={{ fontFamily: 'OpenDyslexic' }}
+      style={{ fontFamily: "OpenDyslexic" }}
     >
       <ToastContainer />
 
@@ -147,7 +174,9 @@ const ReadingAssistanceTool = () => {
 
       {currentParagraph === null ? (
         <section className="grid grid-cols-1 gap-6 w-full max-w-4xl">
-          <h3 className="text-xl font-bold text-center">Select a paragraph:</h3>
+          <h3 className="text-xl font-bold text-center">
+            Select a paragraph to begin
+          </h3>
 
           {paragraphs.map((p, i) => (
             <div
@@ -162,9 +191,7 @@ const ReadingAssistanceTool = () => {
         </section>
       ) : (
         <div className="bg-white shadow-lg rounded-lg p-8 max-w-4xl w-full">
-
           <h3 className="text-xl font-bold mb-4">Read the following passage:</h3>
-
           {currentParagraph !== null && (<div className="mt-4 flex flex-col items-center"> <img src={paragraphs[currentParagraph].image} alt="GIF related to the passage" className="my-2 " style={{ width: '600px', height: '300px' }} /> <AudioPlayer audio={paragraphs[currentParagraph].voice} /> </div>)}
           <div className="my-4 flex justify-center">
             <AudioPlayer audio={paragraphs[currentParagraph].voice} />
@@ -172,30 +199,18 @@ const ReadingAssistanceTool = () => {
 
           <div style={dyslexiaStyle}>
             {paragraphs[currentParagraph].text.split(". ").map((sentence, i) => (
-              <div key={i} className="flex items-center gap-3 mb-3 flex-wrap">
-                <div
-                  className={`flex flex-wrap leading-relaxed ${currentSentenceIndex === i ? "bg-yellow-200" : ""
-                    }`}
-                  style={{
-                    wordBreak: "break-word",
-                    overflowWrap: "anywhere",
-                  }}
-                >
+              <div key={i} className="flex items-start gap-3 mb-3">
+                <div className="flex flex-wrap">
                   {sentence.split(" ").map((word, idx) => (
                     <span
                       key={idx}
                       onClick={() => handleWordClick(word)}
                       className="cursor-pointer hover:bg-gray-200 mr-1"
-                      style={{
-                        display: "inline",
-                        whiteSpace: "normal",
-                      }}
                     >
                       {word}
                     </span>
                   ))}
                 </div>
-
 
                 <button
                   onClick={() => handleReadSentence(sentence, i)}
@@ -231,7 +246,8 @@ const ReadingAssistanceTool = () => {
               <p>{wordDefinitions.definition}</p>
               {wordDefinitions.synonyms.length > 0 && (
                 <p>
-                  <strong>Synonyms:</strong> {wordDefinitions.synonyms.join(", ")}
+                  <strong>Synonyms:</strong>{" "}
+                  {wordDefinitions.synonyms.join(", ")}
                 </p>
               )}
             </div>
@@ -250,8 +266,7 @@ const ReadingAssistanceTool = () => {
       )}
 
       <ChatWidget pageContext="reading-assistance" />
-
-      <audio ref={audioRef} style={{ display: "none" }} />
+      <audio ref={audioRef} hidden />
     </div>
   );
 };

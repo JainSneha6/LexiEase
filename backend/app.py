@@ -172,6 +172,8 @@ Time taken: {time_taken:.2f} seconds
 
 
 
+# --- Updated endpoints using handle_gemini_prompt ---
+
 @app.route('/api/writing-assistant', methods=['POST'])
 def writing_assistant():
     user_text = request.form.get('text')
@@ -180,61 +182,53 @@ def writing_assistant():
     if not user_text and not image_file:
         return jsonify(message='No text or image provided!'), 400
 
-    improved_text = ""
+    try:
+        if user_text:
+            prompt = f"Improve the coherence for the following text for a dyslexic reader (short and simple):\n\n{user_text}"
+            improved_text = handle_gemini_prompt(text_prompt=prompt)
+            return jsonify(message='Text improved successfully!', improved_text=improved_text), 200
 
-    if user_text:
-        prompt = f"Improve the coherence for the following text: '{user_text}'"
-        try:
-            response = model.generate_content([prompt])
-            improved_text = response.text
-        except Exception as e:
-            print(f"Error generating content for text: {e}")
-            return jsonify(message='Error generating improved text!'), 500
+        # image path branch
+        image_path = save_file(image_file, 'user_image')
+        prompt = "Improve the coherence for the text contained in this image. Return only the improved text, short and easy to understand for a dyslexic person."
+        improved_text = handle_gemini_prompt(file_path=image_path, text_prompt=prompt)
+        return jsonify(message='Response generated successfully!', improved_text=improved_text), 200
 
-    elif image_file:
-        try:    
-            image_path = save_file(image_file, 'user_image')
-            prompt = f"Improve the coherence for the following text in the image given:"
-            response = handle_gemini_prompt(file_path=image_path, text_prompt=prompt)
-            return jsonify(message='Response generated successfully!', improved_text=response), 200
-        except Exception as e:
-            print(f"Error generating content for text: {e}")
-            return jsonify(message='Error generating improved text!'), 500
+    except Exception as e:
+        print(f"Error generating improved text: {e}")
+        traceback.print_exc()
+        return jsonify(message='Error generating improved text!'), 500
 
-    return jsonify(message='Text improved successfully!', improved_text=improved_text), 200
 
-    
 @app.route('/api/writing-assistant-spelling', methods=['POST'])
 def writing_assistant_spelling():
     user_text = request.form.get('text')
     image_file = request.files.get('image')
 
-    prompt = (
-        '''Tell the user about the spelling mistakes and sentence formation mistakes for the given text.
-        Provide in a short and concise way keeping in mind this is for a dyslexic person.
-        '''
-        f"'{user_text}'"
+    # Build the spelling prompt once
+    base_prompt = (
+        "Tell the user about the spelling mistakes for the given text. "
+        "Provide a short, concise list and keep suggestions easy to read for a dyslexic person.Just give the words in which the user has made spelling mistakes\n\n"
     )
 
-    if user_text:
-        try:
-            response = model.generate_content([prompt])
-            improved_text = response.text.replace('**','').replace("*",'')
-            return jsonify(message='Text improved successfully!', improved_text=improved_text), 200
-        except Exception as e:
-            print(f"Error generating content: {e}")
-            return jsonify(message='Error generating improved text!'), 500
+    try:
+        if user_text:
+            prompt = base_prompt + user_text
+            improved_text = handle_gemini_prompt(text_prompt=prompt)
+            return jsonify(message='Text analyzed successfully!', improved_text=improved_text), 200
 
-    elif image_file:
-        try:    
-            image_path = save_file(image_file, 'user_image')
-            prompt = f'''Tell the user about the spelling mistakes and sentence formation mistakes for the given text.
-        Provide in a short and concise way keeping in mind this is for a dyslexic person.'''
-            response = handle_gemini_prompt(file_path=image_path, text_prompt=prompt)
-            return jsonify(message='Response generated successfully!', improved_text=response), 200
-        except Exception as e:
-            print(f"Error generating content for text: {e}")
-            return jsonify(message='Error generating improved text!'), 500
+        # image branch
+        image_path = save_file(image_file, 'user_image')
+        prompt = base_prompt + "Please extract the text from the image and then list the spelling and sentence formation mistakes."
+        improved_text = handle_gemini_prompt(file_path=image_path, text_prompt=prompt)
+        return jsonify(message='Response generated successfully!', improved_text=improved_text), 200
+
+    except Exception as e:
+        print(f"Error generating content: {e}")
+        traceback.print_exc()
+        return jsonify(message='Error generating improved text!'), 500
+# --------------------------------------------------------------------
+
 
     
 
@@ -462,29 +456,50 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_extensions
 
 def check_spelling_from_image(img_path, word):
-    """Check spelling of the word in the uploaded image."""
     global correct_answers
     global total_questions
+
     try:
-        user_image_file = genai.upload_file(path=img_path)
-        
-        prompt = f"What is the word written in the image? Give me only the word."
-        response = model.generate_content([user_image_file, prompt])
-        
-        result = response.text.strip()
-        print(f"Gemini API response: {result}")
+        # Read image bytes
+        with open(img_path, "rb") as f:
+            image_bytes = f.read()
+
+        # Build image part correctly
+        image_part = types.Part.from_bytes(
+            data=image_bytes,
+            mime_type="image/png"
+        )
+
+        prompt = (
+            "Read the handwritten word in this image. "
+            "Reply with ONLY the word, no explanation."
+        )
+
+        # Call Gemini
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=[
+                image_part,
+                prompt
+            ]
+        )
+
+        result = (response.text or "").strip()
+        print("Gemini OCR result:", result)
 
         total_questions += 1
 
         if result.lower() == word.lower():
             correct_answers += 1
-            return 'Correct'
-        return 'Incorrect'
-        
+            return "Correct"
+
+        return "Incorrect"
+
     except Exception as e:
-        print(f"An error occurred while checking spelling: {e}")
-        traceback.print_exc()  
+        print("Error while checking spelling:", e)
+        traceback.print_exc()
         raise
+
 
 def tts_generate_and_save(text, voice_id=ELEVEN_VOICE_ID, output_format=ELEVEN_OUTPUT_FORMAT):
     """Call ElevenLabs to synthesize text and save MP3 file. Returns filename."""

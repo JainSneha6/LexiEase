@@ -1,8 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { ToastContainer, toast } from 'react-toastify';
-import axios from 'axios';
-import 'react-toastify/dist/ReactToastify.css';
-import ChatWidget from '../components/ChatWidget';
+import React, { useState, useRef, useEffect } from "react";
+import { ToastContainer, toast } from "react-toastify";
+import axios from "axios";
+import "react-toastify/dist/ReactToastify.css";
+import ChatWidget from "../components/ChatWidget";
+
+const API_BASE = "http://localhost:5000";
 
 const GrayOralReadingTest = () => {
   const [isReading, setIsReading] = useState(false);
@@ -20,10 +22,68 @@ const GrayOralReadingTest = () => {
 
   const feedbackAudioRef = useRef(null);
 
-  const passage =
-    'The sun is bright in the sky. Birds fly high and sing sweet songs. Trees sway gently in the wind. Grass is green and soft underfoot. Children laugh and play outside. They run, jump, and chase each other. A dog wags its tail and joins the fun. Everyone enjoys this nice day. Nature is full of life and happiness.';
+  // 🔐 prevents double speaking in React StrictMode
+  const hasPlayedIntroRef = useRef(false);
 
-  /* ---------------- START RECORDING ---------------- */
+  const passage =
+    "The sun is bright in the sky. Birds fly high and sing sweet songs. Trees sway gently in the wind. Grass is green and soft underfoot. Children laugh and play outside. They run, jump, and chase each other. A dog wags its tail and joins the fun. Everyone enjoys this nice day. Nature is full of life and happiness.";
+
+  /* ===========================
+     🔊 TEXT TO SPEECH (ElevenLabs)
+  ============================ */
+  const speakText = async (text) => {
+    if (!text?.trim()) return;
+
+    try {
+      const res = await fetch(`${API_BASE}/api/tts`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+
+      const data = await res.json();
+      if (!data?.audio_filename) return;
+
+      const audio = new Audio(
+        `${API_BASE}/api/audio/${encodeURIComponent(data.audio_filename)}`
+      );
+
+      feedbackAudioRef.current = audio;
+
+      try {
+        await audio.play();
+      } catch {
+        // autoplay blocked → ignored safely
+      }
+
+      return new Promise((resolve) => {
+        audio.onended = resolve;
+        setTimeout(resolve, 30000);
+      });
+    } catch (err) {
+      console.error("TTS error:", err);
+    }
+  };
+
+  /* ===========================
+     🔊 INTRO (RUN ONCE)
+  ============================ */
+  useEffect(() => {
+    if (hasPlayedIntroRef.current) return;
+    hasPlayedIntroRef.current = true;
+
+    const introText =
+      "Welcome to the reading test. You will see a short passage on the screen. " +
+      "Click start reading and read the passage aloud. " +
+      "When you finish reading, click finish. " +
+      "Try your best. All the best!";
+
+    speakText(introText);
+  }, []);
+
+  /* ===========================
+     START RECORDING
+  ============================ */
   const handleStartReading = async () => {
     setIsReading(true);
     setStartTime(Date.now());
@@ -38,7 +98,7 @@ const GrayOralReadingTest = () => {
       recorder.ondataavailable = (e) => chunks.push(e.data);
 
       recorder.onstop = () => {
-        const blob = new Blob(chunks, { type: 'audio/wav' });
+        const blob = new Blob(chunks, { type: "audio/wav" });
         setAudioBlob(blob);
       };
 
@@ -49,7 +109,9 @@ const GrayOralReadingTest = () => {
     }
   };
 
-  /* ---------------- STOP READING ---------------- */
+  /* ===========================
+     STOP RECORDING
+  ============================ */
   const handleFinishReading = () => {
     setIsReading(false);
 
@@ -65,7 +127,9 @@ const GrayOralReadingTest = () => {
     if (mediaRecorder) mediaRecorder.stop();
   };
 
-  /* ---------------- SEND AUDIO TO BACKEND ---------------- */
+  /* ===========================
+     SEND AUDIO TO BACKEND
+  ============================ */
   const uploadAudioToBackend = async () => {
     if (!audioBlob) return;
 
@@ -76,7 +140,7 @@ const GrayOralReadingTest = () => {
 
     try {
       const res = await axios.post(
-        "http://localhost:5000/api/upload-audio",
+        `${API_BASE}/api/upload-audio`,
         formData,
         { headers: { "Content-Type": "multipart/form-data" } }
       );
@@ -85,10 +149,9 @@ const GrayOralReadingTest = () => {
       setFeedbackText(res.data.feedback_text || "");
 
       if (res.data.feedback_audio) {
-        const audioUrl = `http://localhost:5000/api/audio/${res.data.feedback_audio}`;
-        setFeedbackAudio(audioUrl);
+        const url = `${API_BASE}/api/audio/${res.data.feedback_audio}`;
+        setFeedbackAudio(url);
 
-        // auto-play feedback
         setTimeout(() => {
           feedbackAudioRef.current?.play().catch(() => { });
         }, 300);
@@ -100,7 +163,7 @@ const GrayOralReadingTest = () => {
     }
   };
 
-  /* ---------------- TRIGGER BACKEND AFTER RECORDING ---------------- */
+  /* trigger backend after recording */
   useEffect(() => {
     if (isTestCompleted && audioBlob) {
       uploadAudioToBackend();
@@ -110,7 +173,7 @@ const GrayOralReadingTest = () => {
   return (
     <div
       className="bg-gradient-to-r from-green-200 via-blue-200 to-purple-200 min-h-screen p-8 flex flex-col items-center"
-      style={{ fontFamily: 'OpenDyslexic', lineHeight: '1.5' }}
+      style={{ fontFamily: "OpenDyslexic", lineHeight: "1.5" }}
     >
       <ToastContainer />
 
@@ -119,7 +182,6 @@ const GrayOralReadingTest = () => {
       </h2>
 
       <div className="bg-white shadow-lg rounded-lg p-8 max-w-lg w-full mx-auto text-center">
-
         <h3 className="text-xl font-bold mb-4">Read the following passage:</h3>
 
         <p className="text-gray-700 mb-6">{passage}</p>
@@ -147,7 +209,6 @@ const GrayOralReadingTest = () => {
             <p>
               <strong>Time Taken:</strong> {readingTime.toFixed(2)} seconds
             </p>
-
             <p>
               <strong>Reading Speed:</strong> {readingSpeed} WPM
             </p>
@@ -160,21 +221,15 @@ const GrayOralReadingTest = () => {
           </div>
         )}
 
-        {/* === FEEDBACK SECTION === */}
         {feedbackText && (
           <div className="mt-6 bg-green-100 p-5 rounded-lg shadow">
             <h4 className="font-semibold text-green-800 mb-2">
               Lexi’s Feedback
             </h4>
-
             <p className="text-gray-800">{feedbackText}</p>
 
             {feedbackAudio && (
-              <audio
-                ref={feedbackAudioRef}
-                src={feedbackAudio}
-                className="mt-3 w-full"
-              />
+              <audio ref={feedbackAudioRef} src={feedbackAudio} className="mt-3 w-full" />
             )}
           </div>
         )}
