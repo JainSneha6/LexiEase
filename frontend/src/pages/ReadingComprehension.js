@@ -198,7 +198,7 @@ const ReadingComprehension = () => {
                 src={passages[selectedPassage].image}
                 alt="GIF related to the passage"
                 className="my-4 rounded-lg"
-                style={{ width: '100%', maxWidth: '900px', height: 'auto', objectFit: 'cover' }}
+                style={{ width: '100%', maxWidth: '600px', height: 'auto', objectFit: 'cover' }}
               />
 
               <div className="w-full max-w-3xl bg-white rounded-xl p-4 shadow mb-4">

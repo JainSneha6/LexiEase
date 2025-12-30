@@ -17,6 +17,11 @@ import uuid
 from google import genai
 from google.genai import types
 from datetime import datetime
+import pickle
+import hashlib
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+from uuid import uuid4
 
 load_dotenv()
 # Configure APIs (set env vars)
@@ -58,6 +63,118 @@ class ChatMessage(db.Model):
     role = db.Column(db.String(20), nullable=False)  # "user" or "assistant"
     content = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+# Simple in-memory index store
+DOCUMENT_STORE = {}  # doc_id -> { 'chunks': [...], 'vectorizer': ..., 'matrix': ..., 'text': ..., 'title': ... }
+
+# Configurable params
+CHUNK_SIZE = 800          # characters per chunk (adjust)
+CHUNK_OVERLAP = 150       # overlap chars
+TOP_K = 3                 # how many chunks to retrieve
+
+def chunk_text(text, size=CHUNK_SIZE, overlap=CHUNK_OVERLAP):
+    """Chunk text into overlapping chunks by character count (simple and fast)."""
+    if not text:
+        return []
+    chunks = []
+    start = 0
+    L = len(text)
+    while start < L:
+        end = start + size
+        chunk = text[start:end].strip()
+        if chunk:
+            chunks.append(chunk)
+        if end >= L:
+            break
+        start = end - overlap
+    return chunks
+
+def make_doc_id(text):
+    """Stable-ish id from text content (or use uuid4 for always new)."""
+    # If you prefer always new documents, use: return uuid4().hex
+    h = hashlib.sha1(text.encode('utf-8')).hexdigest()[:12]
+    return h
+
+def index_document(text, title=None, doc_id=None, persist=True):
+    """
+    Build TF-IDF index for the given text and store in DOCUMENT_STORE.
+    Returns doc_id.
+    """
+    if doc_id is None:
+        doc_id = make_doc_id(text)
+    chunks = chunk_text(text)
+    if not chunks:
+        raise ValueError("No chunks to index")
+
+    vectorizer = TfidfVectorizer(stop_words='english', max_features=10000)
+    matrix = vectorizer.fit_transform(chunks)  # shape: (n_chunks, n_features)
+
+    DOCUMENT_STORE[doc_id] = {
+        'chunks': chunks,
+        'vectorizer': vectorizer,
+        'matrix': matrix,
+        'text': text,
+        'title': title or f"doc_{doc_id}",
+        'created_at': datetime.utcnow().isoformat()
+    }
+
+    # optionally persist to disk (pickle) so restarts can reload
+    if persist:
+        try:
+            path = UPLOAD_FOLDER / f"doc_index_{doc_id}.pkl"
+            with open(path, 'wb') as f:
+                pickle.dump({
+                    'chunks': chunks,
+                    'vectorizer': vectorizer,
+                    'matrix': matrix,
+                    'text': text,
+                    'title': title
+                }, f)
+        except Exception as e:
+            print("Warning: failed to persist index:", e)
+    return doc_id
+
+def load_index_if_missing(doc_id):
+    """Try to load pickled index from uploads folder."""
+    if doc_id in DOCUMENT_STORE:
+        return DOCUMENT_STORE[doc_id]
+    path = UPLOAD_FOLDER / f"doc_index_{doc_id}.pkl"
+    if path.exists():
+        try:
+            with open(path, 'rb') as f:
+                data = pickle.load(f)
+            DOCUMENT_STORE[doc_id] = {
+                'chunks': data['chunks'],
+                'vectorizer': data['vectorizer'],
+                'matrix': data['matrix'],
+                'text': data.get('text', ''),
+                'title': data.get('title', ''),
+                'created_at': datetime.utcnow().isoformat()
+            }
+            return DOCUMENT_STORE[doc_id]
+        except Exception as e:
+            print("Failed to load persisted index:", e)
+    return None
+
+def retrieve_top_k(doc_id, question, top_k=TOP_K):
+    """Return top_k chunks (strings) most relevant to question."""
+    doc = load_index_if_missing(doc_id)
+    if not doc:
+        return []
+    vectorizer = doc['vectorizer']
+    matrix = doc['matrix']
+    chunks = doc['chunks']
+
+    q_vec = vectorizer.transform([question])  # shape (1, n_features)
+    sims = cosine_similarity(q_vec, matrix).flatten()
+    idxs = sims.argsort()[::-1][:top_k]
+    # filter zero similarity if all zeros
+    selected = []
+    for i in idxs:
+        if sims[i] <= 0:
+            continue
+        selected.append({'chunk': chunks[i], 'score': float(sims[i]), 'index': int(i)})
+    return selected
 
 @app.route('/api/signup', methods=['POST'])
 def signup():
@@ -230,31 +347,78 @@ def writing_assistant_spelling():
 # --------------------------------------------------------------------
 
 
-    
+
 
 @app.route('/api/upload-pdf', methods=['POST'])
 def upload_pdf():
-    if 'content' not in request.json:
-        print("No text content in request!")
+    payload = request.get_json(force=True, silent=True) or {}
+    extracted_text = payload.get('content', '')
+    if not extracted_text or not extracted_text.strip():
         return jsonify(message='No content provided!'), 400
-
-    extracted_text = request.json['content']
-
-    if not extracted_text.strip():
-        print("No text extracted from PDF!")
-        return jsonify(message='Failed to extract text from the PDF!'), 400
-
-    simplified_text = simplify_text(extracted_text)
     
-    important_words = imp_words(simplified_text)
-    
-    important_words_list = re.findall(r'"([^"]+)"', important_words)
+    try: 
+        simp_prompt =f"Simplify the following text so a dyslexic learner can understand it. Keep short sentences.\n\nText:\n{extracted_text[:4000]}"
+        simplified_text = handle_gemini_prompt(text_prompt=simp_prompt) or extracted_text[:4000]
+    except Exception as e:
+        print('Simplify error:', e)
+        simplified_text = extracted_text[:4000]
 
+    try:
+        imp_prompt = f"List the most important words (single words) from the text as a JSON array.\n\nText:\n{extracted_text[:4000]}"
+        imp_resp = handle_gemini_prompt(text_prompt=imp_prompt) or '[]'
+        imp_words = re.findall(r'"([^\"]+)"|\'([^\']+)\'|\b(\w+)\b',
+imp_resp)[:50]
+        if isinstance(imp_words, list) and imp_words and isinstance(imp_words[0], tuple):
+            imp_words = [next((a for a in t if a), '') for t in imp_words]
+    except Exception as e:
+        print('Imp words error:', e)
+        imp_words = []
+
+    try:
+        doc_id = index_document(extracted_text, title='uploaded_pdf')
+    except Exception as e:
+        print('Indexing error:', e)
+        doc_id = None
+        
     return jsonify(
         message='PDF uploaded and simplified successfully!',
         simplified_text=simplified_text,
-        important_words=important_words_list  
+        important_words=imp_words,
+        doc_id=doc_id
     ), 200
+
+@app.route('/api/ask-doc', methods=['POST'])
+def ask_doc():
+    try:
+        data = request.get_json(force=True) or {}
+        doc_id = data.get('doc_id')
+        question = (data.get('question') or '').strip()
+        voice_id = data.get('voice_id') or ELEVEN_VOICE_ID
+
+        if not doc_id or not question:
+            return jsonify(message='doc_id and question are required'), 400
+        
+        selected = retrieve_top_k(doc_id, question, top_k=TOP_K)
+        if not selected:
+            prompt = f"{_build_system_prompt()}\n\nUser question: {question} \n\nAnswer simply:"
+        else:
+            context_text = '\n\n---\n\n'.join([s['chunk'] for s in selected])
+            MAX_CONTEXT = 3000
+            if len(context_text) > MAX_CONTEXT:
+                context_text = context_text[:MAX_CONTEXT] + '\n\n[contexttruncated]'
+            prompt = (
+                        f"{_build_system_prompt()} \n\nUse the following excerpts from the user's document to answer the question. If not present, be honest.\n\nDocument excerpts:\n{context_text} \n\nUser question: {question}\n\nAnswer succintly and simply:"
+            )
+            assistant_text = handle_gemini_prompt(text_prompt=prompt) or "Sorry, I couldn't generate an answer."
+            
+            audio_filename = None
+            if eleven and (voice_id or ELEVEN_VOICE_ID):
+                audio_filename = tts_generate_and_save(assistant_text, voice_id=voice_id)
+                return jsonify(response=assistant_text, audio_filename=audio_filename, evidence=selected), 200
+    except Exception as e:
+        print('ask-doc error:', e)
+        traceback.print_exc()
+        return jsonify(message='Error generating response'), 500
 
 def simplify_text(text):
     prompt = (
