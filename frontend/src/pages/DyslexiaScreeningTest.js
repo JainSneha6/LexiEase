@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FaCheckCircle, FaSoundcloud, FaBrain, FaBook } from 'react-icons/fa'; // Icons for the cards
-import ChatWidget from '../components/ChatWidget';
 
 const tests = [
   {
@@ -76,7 +75,6 @@ const DyslexiaScreeningTestsPage = () => {
           </div>
         ))}
       </div>
-      <ChatWidget pageContext="dyslexia-screening-tests" />
     </section>
   );
 };

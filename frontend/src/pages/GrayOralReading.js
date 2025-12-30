@@ -13,7 +13,7 @@ const GrayOralReadingTest = () => {
 
   const [readingTime, setReadingTime] = useState(0);
   const [readingSpeed, setReadingSpeed] = useState(0);
-  const [fluencyRating, setFluencyRating] = useState(null);
+  const [fluencyRating, setFluencyRating] = useState(null); 
   const [startTime, setStartTime] = useState(null);
   const [isTestCompleted, setIsTestCompleted] = useState(false);
 
@@ -168,7 +168,7 @@ const GrayOralReadingTest = () => {
     if (isTestCompleted && audioBlob) {
       uploadAudioToBackend();
     }
-  }, [isTestCompleted, audioBlob]);
+  }, [isTestCompleted, audioBlob]); 
 
   return (
     <div

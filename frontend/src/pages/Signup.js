@@ -54,7 +54,6 @@ const Signup = () => {
         </p>
       </div>
       <ToastContainer />
-
     </div>
   );
 };
