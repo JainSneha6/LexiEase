@@ -1,11 +1,8 @@
 from flask import Flask, request, jsonify, send_file
 from flask import Flask, request, jsonify, send_file, abort
 from werkzeug.utils import safe_join
-from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
-from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
-from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 import os
 import re
 import traceback
@@ -42,26 +39,8 @@ ELEVEN_OUTPUT_FORMAT = "mp3_44100_128"  # valid output format
 app = Flask(__name__)
 CORS(app, supports_credentials=True, resources={r"/api/*": {"origins": "http://localhost:3000"}})
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
-app.config['JWT_SECRET_KEY'] = 'super-secret-key' 
-db = SQLAlchemy(app)
-jwt = JWTManager(app)  
-
 UPLOAD_FOLDER = Path("uploads")
 UPLOAD_FOLDER.mkdir(parents=True, exist_ok=True)
-
-class User(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(150), unique=True, nullable=False)
-    password = db.Column(db.String(150), nullable=False)
-    test_score = db.Column(db.Integer, default=0)
-
-class ChatMessage(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, nullable=True)   # nullable for anonymous (we only persist for logged in users)
-    role = db.Column(db.String(20), nullable=False)  # "user" or "assistant"
-    content = db.Column(db.Text, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
 # Simple in-memory index store
 DOCUMENT_STORE = {}  # doc_id -> { 'chunks': [...], 'vectorizer': ..., 'matrix': ..., 'text': ..., 'title': ... }
@@ -174,27 +153,6 @@ def retrieve_top_k(doc_id, question, top_k=TOP_K):
             continue
         selected.append({'chunk': chunks[i], 'score': float(sims[i]), 'index': int(i)})
     return selected
-
-@app.route('/api/signup', methods=['POST'])
-def signup():
-    data = request.get_json()
-    existing_user = User.query.filter_by(email=data['email']).first()
-    if existing_user:
-        return jsonify(message='User already exists!'), 409
-
-    new_user = User(email=data['email'], password=generate_password_hash(data['password'], method='pbkdf2:sha256'))
-    db.session.add(new_user)
-    db.session.commit()
-    return jsonify(message='User created successfully!'), 201
-
-@app.route('/api/login', methods=['POST'])
-def login():
-    data = request.get_json()
-    user = User.query.filter_by(email=data['email']).first()
-    if user and check_password_hash(user.password, data['password']):
-        access_token = create_access_token(identity=user.id)
-        return jsonify(message='Login successful!', access_token=access_token), 200
-    return jsonify(message='Invalid email or password!'), 401
 
 @app.route('/api/save-reading-results', methods=['POST'])
 def save_reading_results():
@@ -890,6 +848,4 @@ NO   → if it does not match
 if __name__ == '__main__':
     if not os.path.exists('uploads'):
         os.makedirs('uploads')
-    with app.app_context():
-        db.create_all()
     app.run(debug=True)

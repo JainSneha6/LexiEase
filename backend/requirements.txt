@@ -1,8 +1,5 @@
-# Core backend
 Flask==3.0.0
-flask-cors==4.0.0
-Flask-SQLAlchemy==3.1.1
-flask-jwt-extended==4.6.0
+Flask-Cors==4.0.0
 Werkzeug==3.0.1
 python-dotenv==1.0.1
 google-genai==0.3.0
@@ -10,6 +7,4 @@ elevenlabs==1.9.0
 scikit-learn==1.4.0
 numpy==1.26.4
 scipy==1.12.0
-PyPDF2==3.0.1
 requests==2.31.0
-uuid==1.30
