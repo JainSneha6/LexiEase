@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect } from "react";
 import axios from "axios";
 import { FaMicrophone, FaPaperPlane, FaFileImage, FaStop, FaSpinner, FaPlay, FaPause } from "react-icons/fa";
 
-const API_BASE = "http://localhost:5000";
+const API_BASE = "https://lexi-ease-ai-l753.vercel.app";
 
 const Chatbot = () => {
   const [text, setText] = useState("");

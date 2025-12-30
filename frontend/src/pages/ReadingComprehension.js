@@ -4,7 +4,7 @@ import { FaMicrophone, FaStop } from 'react-icons/fa';
 import passages from '../utils/ReadingComprehension';
 import AudioPlayer from '../components/AudioPlayer';
 
-const API_BASE = 'http://localhost:5000';
+const API_BASE = 'https://lexi-ease-ai-l753.vercel.app';
 
 // small helper to play local correct/incorrect sounds
 const playSound = (isCorrect) => {

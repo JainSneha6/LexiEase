@@ -10,7 +10,7 @@ const Signup = () => {
   const handleSignup = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post('http://localhost:5000/api/signup', { email, password });
+      const response = await axios.post('https://lexi-ease-ai-l753.vercel.app/api/signup', { email, password });
       toast.success(response.data.message);
     } catch (error) {
       toast.error(error.response?.data.message || 'An error occurred');

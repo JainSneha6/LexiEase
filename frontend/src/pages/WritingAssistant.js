@@ -4,7 +4,7 @@ import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-const API_BASE = "http://localhost:5000";
+const API_BASE = "https://lexi-ease-ai-l753.vercel.app";
 
 const WritingAssistant = () => {
   // visible text

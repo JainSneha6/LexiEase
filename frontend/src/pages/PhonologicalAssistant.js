@@ -36,7 +36,7 @@ const PhonologicalAssistant = () => {
   const speak = async (text) => {
     pauseGifAudio();
 
-    const res = await fetch("http://localhost:5000/api/tts", {
+    const res = await fetch("https://lexi-ease-ai-l753.vercel.app/api/tts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text }),
@@ -45,7 +45,7 @@ const PhonologicalAssistant = () => {
     const data = await res.json();
     if (!data.audio_filename) return;
 
-    ttsAudioRef.current.src = `http://localhost:5000/api/audio/${data.audio_filename}`;
+    ttsAudioRef.current.src = `https://lexi-ease-ai-l753.vercel.app/api/audio/${data.audio_filename}`;
     ttsAudioRef.current.onended = resumeGifAudio;
     await ttsAudioRef.current.play();
   };
@@ -83,7 +83,7 @@ const PhonologicalAssistant = () => {
   const verifyAnswer = async (spokenText) => {
     const puzzle = puzzles[selectedPuzzle];
 
-    const res = await fetch("http://localhost:5000/api/verify-object", {
+    const res = await fetch("https://lexi-ease-ai-l753.vercel.app/api/verify-object", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -96,7 +96,7 @@ const PhonologicalAssistant = () => {
 
     if (data.audio_filename) {
       pauseGifAudio();
-      ttsAudioRef.current.src = `http://localhost:5000/api/audio/${data.audio_filename}`;
+      ttsAudioRef.current.src = `https://lexi-ease-ai-l753.vercel.app/api/audio/${data.audio_filename}`;
       await ttsAudioRef.current.play();
       ttsAudioRef.current.onended = resumeGifAudio;
     }

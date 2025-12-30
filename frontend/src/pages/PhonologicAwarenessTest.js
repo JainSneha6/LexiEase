@@ -4,7 +4,7 @@ import { FaVolumeUp } from 'react-icons/fa';
 import { Pie } from 'react-chartjs-2';
 import 'chart.js/auto';
 
-const API_BASE = "http://localhost:5000";
+const API_BASE = "https://lexi-ease-ai-l753.vercel.app";
 
 const nonsenseWords = {
   easy: ['zap', 'zaf'],
@@ -118,7 +118,7 @@ const Test1 = () => {
       formData.append('image', blob, 'writing.png');
       formData.append('word', currentWord);
 
-      const res = await fetch('http://localhost:5000/api/upload_image', {
+      const res = await fetch('https://lexi-ease-ai-l753.vercel.app/api/upload_image', {
         method: 'POST',
         body: formData,
       });

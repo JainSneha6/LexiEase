@@ -9,7 +9,7 @@ import 'reactflow/dist/style.css';
 
 GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.13.216/pdf.worker.min.js`;
 
-const API_BASE = "http://localhost:5000";
+const API_BASE = "https://lexi-ease-ai-l753.vercel.app";
 
 const MindMapGenerator = () => {
     const [selectedFile, setSelectedFile] = useState(null);

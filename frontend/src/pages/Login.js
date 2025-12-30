@@ -12,7 +12,7 @@ const Login = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post('http://localhost:5000/api/login', { email, password });
+      const response = await axios.post('https://lexi-ease-ai-l753.vercel.app/api/login', { email, password });
       const token = response.data.access_token;
       localStorage.setItem('token', token);
       toast.success(response.data.message);

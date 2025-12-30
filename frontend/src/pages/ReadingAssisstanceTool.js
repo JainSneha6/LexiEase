@@ -5,7 +5,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import paragraphs from '../utils/ReadingParagraphs';
 import AudioPlayer from '../components/AudioPlayer';
 
-const API_BASE = "http://localhost:5000";
+const API_BASE = "https://lexi-ease-ai-l753.vercel.app";
 
 const ReadingAssistanceTool = () => {
   const [isReading, setIsReading] = useState(false);
