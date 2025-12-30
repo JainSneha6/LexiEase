@@ -3,7 +3,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import { FaMicrophone, FaStop } from 'react-icons/fa';
 import passages from '../utils/ReadingComprehension';
 import AudioPlayer from '../components/AudioPlayer';
-import ChatWidget from '../components/ChatWidget';
 
 const API_BASE = 'http://localhost:5000';
 
@@ -292,8 +291,6 @@ const ReadingComprehension = () => {
           </div>
         </div>
       )}
-
-      <ChatWidget pageContext="reading-comprehension" />
     </section>
   );
 };

@@ -3,7 +3,6 @@ import axios from "axios";
 import { getDocument, GlobalWorkerOptions } from "pdfjs-dist/build/pdf";
 import { jsPDF } from "jspdf";
 import "react-toastify/dist/ReactToastify.css";
-import ChatWidget from "../components/ChatWidget";
 
 const API_BASE = "http://localhost:5000";
 
@@ -361,8 +360,6 @@ export default function DocumentSimplifier() {
           </div>
         </div>
       )}
-
-      <ChatWidget pageContext="document-simplifier" />
     </div>
   );
 }

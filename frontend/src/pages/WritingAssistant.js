@@ -3,7 +3,6 @@ import React, { useState, useRef, useEffect } from "react";
 import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import ChatWidget from "../components/ChatWidget";
 
 const API_BASE = "http://localhost:5000";
 
@@ -324,7 +323,6 @@ const WritingAssistant = () => {
       )}
 
       <audio ref={ttsAudioRef} hidden />
-      <ChatWidget pageContext="writing-assistant" />
     </div>
   );
 };

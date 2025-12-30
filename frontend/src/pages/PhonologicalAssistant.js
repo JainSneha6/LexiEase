@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
 import puzzles from "../utils/puzzles";
-import ChatWidget from "../components/ChatWidget";
 
 const shuffleArray = (array) => {
   const arr = [...array];
@@ -248,8 +247,6 @@ const PhonologicalAssistant = () => {
           </div>
         </div>
       )}
-
-      <ChatWidget pageContext="phonological-assistant" />
     </section>
   );
 };

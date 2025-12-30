@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from "react";
 import { ToastContainer, toast } from "react-toastify";
 import axios from "axios";
 import "react-toastify/dist/ReactToastify.css";
-import ChatWidget from "../components/ChatWidget";
 
 const API_BASE = "http://localhost:5000";
 
@@ -234,8 +233,6 @@ const GrayOralReadingTest = () => {
           </div>
         )}
       </div>
-
-      <ChatWidget pageContext="gray-oral-reading-test" />
     </div>
   );
 };

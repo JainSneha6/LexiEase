@@ -3,7 +3,6 @@ import SignatureCanvas from 'react-signature-canvas';
 import { FaVolumeUp } from 'react-icons/fa';
 import { Pie } from 'react-chartjs-2';
 import 'chart.js/auto';
-import ChatWidget from '../components/ChatWidget';
 
 const API_BASE = "http://localhost:5000";
 
@@ -266,8 +265,6 @@ const Test1 = () => {
           </>
         )}
       </div>
-
-      <ChatWidget pageContext="phonological-awareness-test" />
     </div>
   );
 };
