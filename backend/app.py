@@ -419,19 +419,6 @@ def ask_doc():
         print('ask-doc error:', e)
         traceback.print_exc()
         return jsonify(message='Error generating response'), 500
-
-def simplify_text(text):
-    prompt = (
-        "Simplify the following text to make it more understandable:\n"
-        f"'{text}'"
-    )
-    try:
-        response = model.generate_content([prompt])
-        simplified_text = response.text.replace('**','').replace('*','')
-        return simplified_text
-    except Exception as e:
-        print(f"Error simplifying text: {e}")
-        return "Error simplifying text."
     
 def imp_words(text):
     prompt = (
