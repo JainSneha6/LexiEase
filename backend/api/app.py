@@ -15,8 +15,8 @@ from google.genai import types
 from datetime import datetime
 import pickle
 import hashlib
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
+import math
+from collections import Counter
 from uuid import uuid4
 
 load_dotenv()
@@ -50,6 +50,18 @@ CHUNK_SIZE = 800          # characters per chunk (adjust)
 CHUNK_OVERLAP = 150       # overlap chars
 TOP_K = 3                 # how many chunks to retrieve
 
+def cosine_similarity_counter(a: Counter, b: Counter) -> float:
+    common = set(a.keys()) & set(b.keys())
+    numerator = sum(a[x] * b[x] for x in common)
+
+    sum_a = sum(v * v for v in a.values())
+    sum_b = sum(v * v for v in b.values())
+    denominator = math.sqrt(sum_a) * math.sqrt(sum_b)
+
+    if not denominator:
+        return 0.0
+    return numerator / denominator
+
 def chunk_text(text, size=CHUNK_SIZE, overlap=CHUNK_OVERLAP):
     """Chunk text into overlapping chunks by character count (simple and fast)."""
     if not text:
@@ -73,43 +85,24 @@ def make_doc_id(text):
     h = hashlib.sha1(text.encode('utf-8')).hexdigest()[:12]
     return h
 
-def index_document(text, title=None, doc_id=None, persist=True):
-    """
-    Build TF-IDF index for the given text and store in DOCUMENT_STORE.
-    Returns doc_id.
-    """
+def index_document(text, title=None, doc_id=None):
     if doc_id is None:
         doc_id = make_doc_id(text)
+
     chunks = chunk_text(text)
     if not chunks:
         raise ValueError("No chunks to index")
 
-    vectorizer = TfidfVectorizer(stop_words='english', max_features=10000)
-    matrix = vectorizer.fit_transform(chunks)  # shape: (n_chunks, n_features)
+    chunk_vectors = [Counter(chunk.lower().split()) for chunk in chunks]
 
     DOCUMENT_STORE[doc_id] = {
-        'chunks': chunks,
-        'vectorizer': vectorizer,
-        'matrix': matrix,
-        'text': text,
-        'title': title or f"doc_{doc_id}",
-        'created_at': datetime.utcnow().isoformat()
+        "chunks": chunks,
+        "chunk_vectors": chunk_vectors,
+        "text": text,
+        "title": title or f"doc_{doc_id}",
+        "created_at": datetime.utcnow().isoformat()
     }
 
-    # optionally persist to disk (pickle) so restarts can reload
-    if persist:
-        try:
-            path = UPLOAD_FOLDER / f"doc_index_{doc_id}.pkl"
-            with open(path, 'wb') as f:
-                pickle.dump({
-                    'chunks': chunks,
-                    'vectorizer': vectorizer,
-                    'matrix': matrix,
-                    'text': text,
-                    'title': title
-                }, f)
-        except Exception as e:
-            print("Warning: failed to persist index:", e)
     return doc_id
 
 def load_index_if_missing(doc_id):
@@ -135,24 +128,24 @@ def load_index_if_missing(doc_id):
     return None
 
 def retrieve_top_k(doc_id, question, top_k=TOP_K):
-    """Return top_k chunks (strings) most relevant to question."""
-    doc = load_index_if_missing(doc_id)
+    doc = DOCUMENT_STORE.get(doc_id)
     if not doc:
         return []
-    vectorizer = doc['vectorizer']
-    matrix = doc['matrix']
-    chunks = doc['chunks']
 
-    q_vec = vectorizer.transform([question])  # shape (1, n_features)
-    sims = cosine_similarity(q_vec, matrix).flatten()
-    idxs = sims.argsort()[::-1][:top_k]
-    # filter zero similarity if all zeros
-    selected = []
-    for i in idxs:
-        if sims[i] <= 0:
-            continue
-        selected.append({'chunk': chunks[i], 'score': float(sims[i]), 'index': int(i)})
-    return selected
+    question_vec = Counter(question.lower().split())
+
+    scored = []
+    for idx, chunk_vec in enumerate(doc["chunk_vectors"]):
+        score = cosine_similarity_counter(question_vec, chunk_vec)
+        if score > 0:
+            scored.append({
+                "chunk": doc["chunks"][idx],
+                "score": score,
+                "index": idx
+            })
+
+    scored.sort(key=lambda x: x["score"], reverse=True)
+    return scored[:top_k]
 
 @app.route('/api/save-reading-results', methods=['POST'])
 def save_reading_results():
