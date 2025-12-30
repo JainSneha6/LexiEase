@@ -421,74 +421,128 @@ def ask_doc():
         return jsonify(message='Error generating response'), 500
     
 def imp_words(text):
+    """
+    Return a list of important single-word tokens from text.
+    """
+    if not text:
+        return []
     prompt = (
-        "Give me only most important words from the text in the form of an array.:\n"
-        f"'{text}'"
+        "List the single most important words from the text as a JSON array of words. "
+        "Return only the JSON array.\n\n"
+        f"Text:\n{text[:4000]}"
     )
     try:
-        response = model.generate_content([prompt])
-        words = response.text.replace('**','').replace('*','')
-        return words
+        resp = handle_gemini_prompt(text_prompt=prompt) or '[]'
+        return parse_json_or_list_like(resp)
     except Exception as e:
-        print(f"Error simplifying text: {e}")
-        return "Error simplifying text."
-    
-@app.route('/api/upload-pdf-notes', methods=['POST'])
-def upload_pdf_notes():
-    if 'content' not in request.json:
-        print("No text content in request!")
-        return jsonify(message='No content provided!'), 400
-
-    extracted_text = request.json['content']
-
-    if not extracted_text.strip():
-        print("No text extracted from PDF!")
-        return jsonify(message='Failed to extract text from the PDF!'), 400
-
-    simplified_text = generate_notes(extracted_text)
-    
-    important_words = imp_words(simplified_text)
-    
-    important_words_list = re.findall(r'"([^"]+)"', important_words)
-    
-    important_points = extract_key_points_from_gemini(simplified_text)
-    
-    important_points_list = re.findall(r'"([^"]+)"', important_points)
-
-    return jsonify(
-        message='PDF uploaded and simplified successfully!',
-        simplified_text=simplified_text,
-        important_words=important_words_list,
-        important_points=important_points_list
-    ), 200
+        print("imp_words error:", e)
+        return []
 
 def generate_notes(text):
-    print(text)
+    """
+    Return simplified notes (string).
+    """
+    if not text:
+        return ""
     prompt = (
-        "Generate proper notes from the text provided.:\n"
-        f"'{text}'"
+        "Generate short, dyslexic-friendly notes from the text. Use short sentences and headings where helpful. Return plain text.\n\n"
+        f"Text:\n{text[:8000]}"
     )
     try:
-        response = model.generate_content([prompt])
-        simplified_text = response.text.replace('**','').replace('*','')
-        return simplified_text
+        resp = handle_gemini_prompt(text_prompt=prompt) or ""
+        # strip bold markers if any
+        resp = resp.replace('**', '').replace('*', '')
+        return resp
     except Exception as e:
-        print(f"Error simplifying text: {e}")
-        return "Error simplifying text."
-    
+        print("generate_notes error", e)
+        return text[:4000]
+
 def extract_key_points_from_gemini(text):
+    """
+    Return a list of concise key points suitable for a mind map.
+    The model is asked to return a JSON array; we parse it.
+    """
+    if not text:
+        return []
     prompt = (
-        "Provide 5 consice points to create a mindmap in the form of an array:\n"
-        f"'{text}'"
+        "Provide 5 concise points to create a mind map. Return the result as a JSON array of short strings.\n\n"
+        f"Text:\n{text[:8000]}"
     )
     try:
-        response = model.generate_content([prompt])
-        key_points = response.text.replace('**','').replace('*','')
-        print(key_points)
-        return key_points
+        resp = handle_gemini_prompt(text_prompt=prompt) or "[]"
+        pts = parse_json_or_list_like(resp)
+        # ensure returned is list of strings
+        return [str(p).strip() for p in pts if str(p).strip()]
     except Exception as e:
-        print(f"Error extracting key points: {e}")
+        print("extract_key_points_from_gemini error:", e)
+        traceback.print_exc()
         return []
+    
+def parse_json_or_list_like(resp_text):
+    """
+    Try to parse a response that may be:
+      - a JSON array string: '["word1", "word2"]'
+      - plain newline or comma separated words
+      - an array already (if upstream returned list)
+    Returns a python list of strings.
+    """
+    if resp_text is None:
+        return []
+    # if already a list
+    if isinstance(resp_text, list):
+        return [str(x).strip() for x in resp_text if str(x).strip()]
+    # try json
+    try:
+        parsed = json.loads(resp_text)
+        if isinstance(parsed, list):
+            return [str(x).strip() for x in parsed if str(x).strip()]
+    except Exception:
+        pass
+    # fallback: extract quoted strings first
+    quoted = re.findall(r'"([^"]+)"|\'([^\']+)\'', resp_text)
+    if quoted:
+        words = [a or b for a, b in quoted]
+        return [w.strip() for w in words if w.strip()]
+    # fallback: split by commas/newlines and clean
+    items = re.split(r'[\n,;]+', resp_text)
+    items = [i.strip() for i in items if i and i.strip()]
+    # if items look like sentences, try to return first-word tokens
+    if items and all(len(i.split()) > 2 for i in items):
+        # maybe it's full sentences -> return none
+        return items
+    return items
+
+@app.route('/api/upload-pdf-notes', methods=['POST'])
+def upload_pdf_notes():
+    try:
+        if 'content' not in request.json:
+            print("No text content in request!")
+            return jsonify(message='No content provided!'), 400
+
+        extracted_text = request.json['content']
+        if not extracted_text.strip():
+            print("No text extracted from PDF!")
+            return jsonify(message='Failed to extract text from the PDF!'), 400
+
+        simplified_text = generate_notes(extracted_text)
+        important_words = imp_words(simplified_text)  # returns list
+        important_points = extract_key_points_from_gemini(simplified_text)  # returns list
+
+        # final sanitize: ensure lists of strings
+        important_words_list = [str(w).strip() for w in important_words if str(w).strip()]
+        important_points_list = [str(p).strip() for p in important_points if str(p).strip()]
+
+        return jsonify(
+            message='PDF uploaded and simplified successfully!',
+            simplified_text=simplified_text,
+            important_words=important_words_list,
+            important_points=important_points_list
+        ), 200
+
+    except Exception as e:
+        print("upload_pdf_notes error:", e)
+        traceback.print_exc()
+        return jsonify(message='Error processing PDF notes'), 500
     
 def save_file(file, prefix):
     """Save uploaded file securely and return path."""
