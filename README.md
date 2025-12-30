@@ -173,6 +173,10 @@ Silent reading increases stress and slows comprehension.
 
 ---
 
+## ElevenLabs Usage
+<img width="903" height="522" alt="ElevenLabs" src="https://github.com/user-attachments/assets/c2888e86-1ac3-49af-bbb2-c2e978b45cf5" />
+
+---
 ## Technology Stack
 
 | Layer / Component | Technologies / Libraries | 
@@ -207,9 +211,8 @@ Silent reading increases stress and slows comprehension.
 ![image](https://github.com/user-attachments/assets/f09e8b34-cf84-4ba0-bdfd-98d519aeaa49)
 ![image](https://github.com/user-attachments/assets/046948f9-dc73-461a-9700-411e6ed37034)
 
-
-
-
+## License
+This project is licensed under the MIT License.
 
 
 
