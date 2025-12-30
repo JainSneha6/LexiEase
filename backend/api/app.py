@@ -37,7 +37,7 @@ ELEVEN_OUTPUT_FORMAT = "mp3_44100_128"  # valid output format
 
 
 app = Flask(__name__)
-CORS(app, supports_credentials=True, resources={r"/api/*": {"origins": "http://localhost:3000"}})
+CORS(app, supports_credentials=True, resources={r"/api/*": {"origins": "*"}})
 
 UPLOAD_FOLDER = Path("/tmp/uploads")
     
