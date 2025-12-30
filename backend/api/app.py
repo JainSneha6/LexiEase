@@ -39,8 +39,7 @@ ELEVEN_OUTPUT_FORMAT = "mp3_44100_128"  # valid output format
 app = Flask(__name__)
 CORS(app, supports_credentials=True, resources={r"/api/*": {"origins": "http://localhost:3000"}})
 
-UPLOAD_FOLDER = Path("uploads")
-UPLOAD_FOLDER.mkdir(parents=True, exist_ok=True)
+UPLOAD_FOLDER = Path("/tmp/uploads")
     
 # Simple in-memory index store
 DOCUMENT_STORE = {}  # doc_id -> { 'chunks': [...], 'vectorizer': ..., 'matrix': ..., 'text': ..., 'title': ... }
@@ -49,6 +48,12 @@ DOCUMENT_STORE = {}  # doc_id -> { 'chunks': [...], 'vectorizer': ..., 'matrix':
 CHUNK_SIZE = 800          # characters per chunk (adjust)
 CHUNK_OVERLAP = 150       # overlap chars
 TOP_K = 3                 # how many chunks to retrieve
+
+def ensure_upload_dir():
+    try:
+        UPLOAD_FOLDER.mkdir(parents=True, exist_ok=True)
+    except Exception:
+        pass
 
 def cosine_similarity_counter(a: Counter, b: Counter) -> float:
     common = set(a.keys()) & set(b.keys())
@@ -495,7 +500,7 @@ def upload_pdf_notes():
         return jsonify(message='Error processing PDF notes'), 500
     
 def save_file(file, prefix):
-    """Save uploaded file securely and return path."""
+    ensure_upload_dir()
     filename = secure_filename(f"{prefix}_{file.filename}")
     filepath = UPLOAD_FOLDER / filename
     file.save(str(filepath))
@@ -658,7 +663,7 @@ def check_spelling_from_image(img_path, word):
 
 def tts_generate_and_save(text, voice_id=ELEVEN_VOICE_ID, output_format=ELEVEN_OUTPUT_FORMAT):
     """Call ElevenLabs to synthesize text and save MP3 file. Returns filename."""
-    # create unique filename
+    ensure_upload_dir()
     filename = f"bot_resp_{uuid.uuid4().hex}.mp3"
     filepath = UPLOAD_FOLDER / filename
 
