@@ -199,9 +199,12 @@ Silent reading increases stress and slows comprehension.
 
 <img width="4484" height="3128" alt="image" src="https://github.com/user-attachments/assets/3c70eb6d-a92f-4510-9558-6283d4de89e4" />
 
+---
+
 ## User Flow
 <img width="1123" height="582" alt="image" src="https://github.com/user-attachments/assets/0a2324ce-ac6d-4674-94eb-99ecb5bbd43f" />
 
+---
 
 ## Snapshots of our Project
 <img width="1919" height="906" alt="image" src="https://github.com/user-attachments/assets/b4f344e6-e5e0-4114-927b-8688f97adef8" />
@@ -210,6 +213,8 @@ Silent reading increases stress and slows comprehension.
 <img width="1898" height="913" alt="image" src="https://github.com/user-attachments/assets/e15db546-3038-4575-a3d0-c7e499e2fb82" />
 <img width="1913" height="914" alt="image" src="https://github.com/user-attachments/assets/5b936c48-cb78-451a-aca4-74eba30c005b" />
 <img width="1918" height="913" alt="image" src="https://github.com/user-attachments/assets/ae954e32-9f36-4420-ab01-21be28f00aed" />
+
+---
 
 ## License
 This project is licensed under the MIT License.
