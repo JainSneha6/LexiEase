@@ -112,17 +112,17 @@ Silent reading increases stress and slows comprehension.
 ### 1. Phonological Awareness Test
 - A cognitive test designed to assess the user's ability to identify and manipulate sounds in spoken words.  
 - Includes various subtests to measure awareness of phonemes, syllables, and rhymes.  
-![Phonological Awareness Test](https://github.com/user-attachments/assets/338a0022-ac5c-4c37-a5ff-0c74a1fb4997)
+<img width="3964" height="1644" alt="image" src="https://github.com/user-attachments/assets/844c099c-c2af-46fe-9f4b-e131d6bcd284" />
 
 ### 2. Kaufman Assessment Battery Test
 - A comprehensive intelligence test that evaluates both verbal and non-verbal cognitive abilities.  
 - Provides insights into cognitive strengths and weaknesses, helping tailor learning paths for individuals.  
-![Kaufman Assessment Battery Test](https://github.com/user-attachments/assets/87c72380-5e93-4d76-b435-90bbc3e1ddb4)
+<img width="3764" height="1632" alt="image" src="https://github.com/user-attachments/assets/f5ab1e30-2dc6-4b98-ba69-66047111ede5" />
 
 ### 3. Gray Oral Reading Test (GORT)
 - A standardized test to assess the fluency and comprehension of oral reading.  
 - Users read passages aloud, and the system evaluates speed, accuracy, and comprehension.  
-![Gray Oral Reading Test](https://github.com/user-attachments/assets/32ce4a78-2681-47a1-b8e1-9768aaae6ec2)
+<img width="2844" height="1568" alt="image" src="https://github.com/user-attachments/assets/623934e2-5e9a-44e8-8428-258fefb35b97" />
 
 ---
 
@@ -131,22 +131,22 @@ Silent reading increases stress and slows comprehension.
 ### 1. Reading Aloud Support
 - Text-to-speech functionality to read out content for users, particularly those with visual impairments or learning disabilities.  
 - Helps improve literacy and comprehension by listening to the content aloud.  
-![Reading Aloud Support](https://github.com/user-attachments/assets/62c9fb16-3eed-4c51-89e8-87c78ccd63f2)
+<img width="3364" height="1688" alt="image" src="https://github.com/user-attachments/assets/59d09615-4712-4ece-9beb-3d80cb9f7c0f" />
 
 ### 2. Reading Comprehension
 - Tests and exercises to assess a user’s understanding of written text.  
 - Users answer questions based on passages, helping track and improve their comprehension skills.  
-![Reading Comprehension](https://github.com/user-attachments/assets/0f2d0bf5-4829-4851-a42e-47dadffb59c2)
+<img width="2244" height="1684" alt="image" src="https://github.com/user-attachments/assets/5dd596cf-2ab6-43c1-99cd-626ffa2aff13" />
 
 ### 3. Memory Games
 - Interactive memory-enhancing games designed to boost cognitive function and memory retention.  
 - Games focus on recall, recognition, and matching activities, making learning engaging and fun.  
-![Memory Games](https://github.com/user-attachments/assets/4e06049b-0bc4-4ad4-9001-83668c161400)
+<img width="2484" height="2048" alt="image" src="https://github.com/user-attachments/assets/13c7eb87-d915-416c-bdc3-c86b8d37cc96" />
 
 ### 4. Phonological Improvement Assistant
 - A virtual assistant to help users improve their phonological skills.  
 - Provides feedback, exercises, and tailored tips to enhance sound recognition and manipulation abilities.  
-![Phonological Improvement Assistant](https://github.com/user-attachments/assets/f51d5ece-d722-42b3-8cac-5c62573db2df)
+<img width="2648" height="1788" alt="image" src="https://github.com/user-attachments/assets/af7b58f2-dadb-4189-bed1-85748b919d64" />
 
 ---
 
@@ -155,26 +155,26 @@ Silent reading increases stress and slows comprehension.
 ### 1. AI-Powered Writing Support
 - Extracts text from documents or images using a fine-tuned OCR pipeline.  
 - Uses DistilBERT to identify mistakes, restructure sentences, improve coherence, and produce polished versions of text.  
-![AI-Powered Writing Support](https://github.com/user-attachments/assets/c3b44b4f-7503-4e2b-a605-c08873f44f52)
+<img width="1268" height="928" alt="image" src="https://github.com/user-attachments/assets/6665efdf-73a6-4607-87a7-517f7ffd1b9c" />
 
 ### 2. AI Chatbot
 - Conversational AI designed to answer queries, provide study assistance, or explain concepts in real-time.  
-![AI Chatbot](https://github.com/user-attachments/assets/f8208a6b-355b-473a-bbcc-2591b5817dd1)
+<img width="1804" height="964" alt="image" src="https://github.com/user-attachments/assets/948ba90d-04be-4ad7-83ce-84f47e456585" />
 
 ### 3. AI-Powered Document Simplification
 - Simplifies complex documents by rephrasing and summarizing content without losing essential meaning.  
 - Helps users better understand dense information by breaking it into digestible chunks.  
-![AI-Powered Document Simplification](https://github.com/user-attachments/assets/72492cd7-b6e9-4780-986b-269100bc71dc)
+<img width="2284" height="616" alt="image" src="https://github.com/user-attachments/assets/51a410a5-25bc-4591-a4eb-a5599826e16c" />
 
 ### 4. Notes & Mind Map Generation from PDF
 - Converts textual content from PDFs into structured mind maps.  
 - Provides visual representation of concepts, aiding understanding of relationships and ideas.  
-![Notes & Mind Map Generation](https://github.com/user-attachments/assets/0b32bd4a-81ab-4ce1-8537-5436a121ccba)
+<img width="2928" height="884" alt="image" src="https://github.com/user-attachments/assets/9701a092-b970-4216-aca5-3cd3af62a80a" />
 
 ---
 
 ## ElevenLabs Usage
-<img width="903" height="522" alt="ElevenLabs" src="https://github.com/user-attachments/assets/c2888e86-1ac3-49af-bbb2-c2e978b45cf5" />
+<img width="903" height="522" alt="image" src="https://github.com/user-attachments/assets/eb2f603c-2ea5-4665-939f-4a71e36bc5f9" />
 
 ---
 ## Technology Stack
@@ -197,19 +197,19 @@ Silent reading increases stress and slows comprehension.
 
 ## Project Architecture
 
-<img width="4484" height="3128" alt="image" src="https://github.com/user-attachments/assets/9bfc7e71-9162-4422-8976-3b9c6853f94c" />
+<img width="4484" height="3128" alt="image" src="https://github.com/user-attachments/assets/3c70eb6d-a92f-4510-9558-6283d4de89e4" />
 
 ## User Flow
-![image](https://github.com/user-attachments/assets/a1a63b5f-5e55-4033-a5ce-711da18bca2f)
+<img width="1123" height="582" alt="image" src="https://github.com/user-attachments/assets/0a2324ce-ac6d-4674-94eb-99ecb5bbd43f" />
 
 
 ## Snapshots of our Project
-![image](https://github.com/user-attachments/assets/bb52cd20-16fe-49f6-b95c-e973a44e52fe)
-![image](https://github.com/user-attachments/assets/ad438d3c-43c7-4b14-b9a6-f58ab63f38df)
-![image](https://github.com/user-attachments/assets/20578bf6-bde3-4c59-b46d-7ef233cd8803)
-![image](https://github.com/user-attachments/assets/364152b4-7555-4adb-ba5b-e61b012b4236)
-![image](https://github.com/user-attachments/assets/f09e8b34-cf84-4ba0-bdfd-98d519aeaa49)
-![image](https://github.com/user-attachments/assets/046948f9-dc73-461a-9700-411e6ed37034)
+<img width="1919" height="906" alt="image" src="https://github.com/user-attachments/assets/b4f344e6-e5e0-4114-927b-8688f97adef8" />
+<img width="1919" height="908" alt="image" src="https://github.com/user-attachments/assets/d6e17bf0-b071-4a31-9d0d-cfd3b9f2b1da" />
+<img width="1893" height="909" alt="image" src="https://github.com/user-attachments/assets/b86ba0fd-9208-439e-a402-14ab9b0359f1" />
+<img width="1898" height="913" alt="image" src="https://github.com/user-attachments/assets/e15db546-3038-4575-a3d0-c7e499e2fb82" />
+<img width="1913" height="914" alt="image" src="https://github.com/user-attachments/assets/5b936c48-cb78-451a-aca4-74eba30c005b" />
+<img width="1918" height="913" alt="image" src="https://github.com/user-attachments/assets/ae954e32-9f36-4420-ab01-21be28f00aed" />
 
 ## License
 This project is licensed under the MIT License.
